@@ -20,6 +20,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - ✅ Interfaz moderna y completamente responsive
 - ✅ **Instalable como PWA** - Puedes instalarla en tu dispositivo
 - ✅ **App de escritorio** - Instalador para Windows (.exe), Mac (.dmg) y Linux (.AppImage)
+- ✅ **Base de datos en la nube (opcional)** - Configura Supabase para sincronización entre dispositivos
 
 ## Tecnologías
 
@@ -186,17 +187,29 @@ Cada vez que hagas `git push` a la rama `main`, el sitio se actualizará automá
 
 ## Sistema de Usuarios
 
-FinanzApp ahora incluye un sistema de autenticación que permite que cada usuario tenga sus propios datos de forma segura:
+FinanzApp incluye un sistema de autenticación que permite que cada usuario tenga sus propios datos de forma segura:
 
 - ✅ **Registro de usuarios**: Crea tu cuenta con email, contraseña y nombre
 - ✅ **Inicio de sesión**: Accede a tus datos con tu cuenta
 - ✅ **Datos privados**: Cada usuario solo ve sus propios gastos y estadísticas
 - ✅ **Múltiples usuarios**: Varias personas pueden usar la misma app en el mismo dispositivo
-- ✅ **Seguridad**: Las contraseñas se almacenan de forma segura (hash SHA-256)
+
+### 🚀 Base de Datos en la Nube (Supabase) - Opcional
+
+Puedes configurar Supabase para tener:
+- ✅ **Sincronización entre dispositivos**: Tus datos están en la nube
+- ✅ **Autenticación real**: Sistema seguro con tokens JWT
+- ✅ **Backup automático**: Tus datos están respaldados
+- ✅ **Base de datos PostgreSQL**: Escalable y robusta
+
+**Configuración**: Ver [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) para instrucciones detalladas.
+
+**Sin Supabase**: Si no lo configuras, la app usa localStorage como fallback (datos locales en el navegador).
 
 ### Características de seguridad:
-- Las contraseñas se hashean antes de guardarse
+- Las contraseñas se hashean (SHA-256 local o bcrypt en Supabase)
 - Cada usuario tiene sus propios datos aislados
+- Row Level Security (RLS) en Supabase
 - La sesión persiste entre recargas de página
 
 ## Almacenamiento

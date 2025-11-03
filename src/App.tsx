@@ -1,6 +1,6 @@
-import { useGastos } from './hooks/useGastos';
+import { useGastosSupabase } from './hooks/useGastosSupabase';
 import { useMoneda } from './hooks/useMoneda';
-import { useAuth } from './hooks/useAuth';
+import { useAuthSupabase } from './hooks/useAuthSupabase';
 import { GastoForm } from './components/GastoForm';
 import { GastoList } from './components/GastoList';
 import { GastosChart } from './components/GastosChart';
@@ -12,19 +12,22 @@ import { Login } from './components/Login';
 import { Wallet, LogOut, User } from 'lucide-react';
 
 function App() {
-  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion } = useAuth();
-  const { gastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastos(usuarioActual?.id || null);
+  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion, usandoSupabase } = useAuthSupabase();
+  const { gastos, cargando: cargandoGastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastosSupabase(usuarioActual?.id || null, usandoSupabase);
   const { moneda, cambiarMoneda, obtenerMoneda } = useMoneda(usuarioActual?.id || null);
   const estadisticas = calcularEstadisticas();
   const monedaActual = obtenerMoneda();
 
   // Mostrar pantalla de carga mientras se verifica la sesión
-  if (cargandoAuth) {
+  if (cargandoAuth || cargandoGastos) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando...</p>
+          {usandoSupabase && (
+            <p className="text-xs text-gray-500 mt-2">📡 Sincronizando con la nube...</p>
+          )}
         </div>
       </div>
     );
