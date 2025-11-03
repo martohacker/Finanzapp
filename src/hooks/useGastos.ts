@@ -56,14 +56,7 @@ export function useGastos() {
     const diasDelMes = ahora.getDate();
     const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
 
-    // Calcular días totales si hay gastos
-    const primerGasto = gastos[gastos.length - 1];
-    if (primerGasto) {
-      const fechaPrimerGasto = new Date(primerGasto.fecha);
-      const diasTranscurridos = Math.max(1, Math.ceil((ahora.getTime() - fechaPrimerGasto.getTime()) / (1000 * 60 * 60 * 24)));
-      const promedioMensual = (totalGastos / diasTranscurridos) * 30;
-    }
-
+    // Calcular promedio mensual basado en días totales
     const diasTotal = gastos.length > 0 
       ? Math.max(1, Math.ceil((ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) / (1000 * 60 * 60 * 24)))
       : 1;
