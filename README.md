@@ -20,7 +20,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - ✅ Interfaz moderna y completamente responsive
 - ✅ **Instalable como PWA** - Puedes instalarla en tu dispositivo
 - ✅ **App de escritorio** - Instalador para Windows (.exe), Mac (.dmg) y Linux (.AppImage)
-- ✅ **Base de datos en la nube (opcional)** - Configura Supabase para sincronización entre dispositivos
+- ✅ **Base de datos en la nube (opcional)** - Configura Firebase o Supabase para sincronización entre dispositivos
 
 ## Tecnologías
 
@@ -194,19 +194,32 @@ FinanzApp incluye un sistema de autenticación que permite que cada usuario teng
 - ✅ **Datos privados**: Cada usuario solo ve sus propios gastos y estadísticas
 - ✅ **Múltiples usuarios**: Varias personas pueden usar la misma app en el mismo dispositivo
 
-### 🚀 Base de Datos en la Nube (Supabase) - Opcional
+### 🚀 Base de Datos en la Nube - Opcional
 
-Puedes configurar Supabase para tener:
+Puedes configurar **Firebase** (recomendado) o **Supabase** para tener:
 - ✅ **Sincronización entre dispositivos**: Tus datos están en la nube
 - ✅ **Autenticación real**: Sistema seguro con tokens JWT
 - ✅ **Backup automático**: Tus datos están respaldados
-- ✅ **Base de datos PostgreSQL**: Escalable y robusta
+- ✅ **1 GB gratis** (Firebase) o 500 MB (Supabase)
+
+#### 🔥 Firebase (Recomendado)
+- ✅ **1 GB de almacenamiento gratis** (más generoso)
+- ✅ **10 GB de transferencia/mes**
+- ✅ **50,000 lecturas/día**
+- ✅ Infraestructura de Google
+
+**Configuración**: Ver [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) para instrucciones detalladas.
+
+#### 🗄️ Supabase (Alternativa)
+- ✅ Base de datos PostgreSQL
+- ✅ 500 MB de almacenamiento gratis
+- ✅ Open source
 
 **Configuración**: Ver [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) para instrucciones detalladas.
 
-**Sin Supabase**: Si no lo configuras, la app usa localStorage como fallback (datos locales en el navegador).
+**Sin base de datos**: Si no configuras ninguna, la app usa localStorage como fallback (datos locales en el navegador).
 
-**Otras opciones**: Ver [OPCIONES_BASE_DATOS.md](./OPCIONES_BASE_DATOS.md) para más alternativas gratuitas (Firebase, MongoDB Atlas, etc.)
+**Otras opciones**: Ver [OPCIONES_BASE_DATOS.md](./OPCIONES_BASE_DATOS.md) para más alternativas gratuitas.
 
 ### Características de seguridad:
 - Las contraseñas se hashean (SHA-256 local o bcrypt en Supabase)

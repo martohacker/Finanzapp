@@ -1,6 +1,6 @@
-import { useGastosSupabase } from './hooks/useGastosSupabase';
+import { useGastosFirebase } from './hooks/useGastosFirebase';
 import { useMoneda } from './hooks/useMoneda';
-import { useAuthSupabase } from './hooks/useAuthSupabase';
+import { useAuthFirebase } from './hooks/useAuthFirebase';
 import { GastoForm } from './components/GastoForm';
 import { GastoList } from './components/GastoList';
 import { GastosChart } from './components/GastosChart';
@@ -13,8 +13,8 @@ import { ExportarDatos } from './components/ExportarDatos';
 import { Wallet, LogOut, User } from 'lucide-react';
 
 function App() {
-  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion, usandoSupabase } = useAuthSupabase();
-  const { gastos, cargando: cargandoGastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastosSupabase(usuarioActual?.id || null, usandoSupabase);
+  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion, usandoFirebase } = useAuthFirebase();
+  const { gastos, cargando: cargandoGastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastosFirebase(usuarioActual?.id || null, usandoFirebase);
   const { moneda, cambiarMoneda, obtenerMoneda } = useMoneda(usuarioActual?.id || null);
   const estadisticas = calcularEstadisticas();
   const monedaActual = obtenerMoneda();
@@ -26,8 +26,8 @@ function App() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando...</p>
-          {usandoSupabase && (
-            <p className="text-xs text-gray-500 mt-2">📡 Sincronizando con la nube...</p>
+          {usandoFirebase && (
+            <p className="text-xs text-gray-500 mt-2">📡 Sincronizando con Firebase...</p>
           )}
         </div>
       </div>
@@ -76,7 +76,7 @@ function App() {
         <BannerInstalacion />
 
         {/* Exportar/Importar datos */}
-        {!usandoSupabase && (
+        {!usandoFirebase && (
           <ExportarDatos 
             gastos={gastos} 
             usuarioId={usuarioActual.id}
