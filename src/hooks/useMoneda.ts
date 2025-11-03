@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
 import { MONEDA_DEFAULT, MONEDAS, Moneda } from '../constants/monedas';
 
-const STORAGE_KEY = 'finanzapp-moneda';
+const obtenerStorageKey = (userId: string | null) => 
+  userId ? `finanzapp-moneda-${userId}` : 'finanzapp-moneda-temp';
 
-export function useMoneda() {
+export function useMoneda(userId: string | null) {
   const [moneda, setMoneda] = useState<string>(MONEDA_DEFAULT);
 
-  // Cargar moneda del localStorage al iniciar
+  // Cargar moneda del localStorage al iniciar o cambiar usuario
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const storageKey = obtenerStorageKey(userId);
+    const stored = localStorage.getItem(storageKey);
     if (stored && MONEDAS.find(m => m.codigo === stored)) {
       setMoneda(stored);
+    } else {
+      setMoneda(MONEDA_DEFAULT);
     }
-  }, []);
+  }, [userId]);
 
   // Guardar moneda en localStorage cuando cambie
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, moneda);
-  }, [moneda]);
+    if (userId) {
+      const storageKey = obtenerStorageKey(userId);
+      localStorage.setItem(storageKey, moneda);
+    }
+  }, [moneda, userId]);
 
   const cambiarMoneda = (codigoMoneda: string) => {
     if (MONEDAS.find(m => m.codigo === codigoMoneda)) {

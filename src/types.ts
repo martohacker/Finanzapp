@@ -21,3 +21,10 @@ export interface Estadisticas {
   gastoDelMes: number;
   gastoDelDia: number;
 }
+
+export interface Usuario {
+  id: string;
+  email: string;
+  nombre: string;
+  fechaCreacion: string;
+}

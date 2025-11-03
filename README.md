@@ -184,9 +184,27 @@ Cada vez que hagas `git push` a la rama `main`, el sitio se actualizará automá
 - 💰 PEN (Sol Peruano)
 - 💵 BRL (Real Brasileño)
 
+## Sistema de Usuarios
+
+FinanzApp ahora incluye un sistema de autenticación que permite que cada usuario tenga sus propios datos de forma segura:
+
+- ✅ **Registro de usuarios**: Crea tu cuenta con email, contraseña y nombre
+- ✅ **Inicio de sesión**: Accede a tus datos con tu cuenta
+- ✅ **Datos privados**: Cada usuario solo ve sus propios gastos y estadísticas
+- ✅ **Múltiples usuarios**: Varias personas pueden usar la misma app en el mismo dispositivo
+- ✅ **Seguridad**: Las contraseñas se almacenan de forma segura (hash SHA-256)
+
+### Características de seguridad:
+- Las contraseñas se hashean antes de guardarse
+- Cada usuario tiene sus propios datos aislados
+- La sesión persiste entre recargas de página
+
 ## Almacenamiento
 
-Los datos se guardan automáticamente en el localStorage de tu navegador, por lo que tus gastos persisten entre sesiones.
+Los datos se guardan automáticamente en el localStorage de tu navegador, separados por usuario. Cada usuario tiene:
+- Sus propios gastos (`finanzapp-gastos-{userId}`)
+- Su moneda preferida (`finanzapp-moneda-{userId}`)
+- Sus preferencias de usuario
 
 ## Cotizaciones
 

@@ -2,27 +2,34 @@ import { useState, useEffect } from 'react';
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
 
-const STORAGE_KEY = 'finanzapp-gastos';
+const obtenerStorageKey = (userId: string | null) => 
+  userId ? `finanzapp-gastos-${userId}` : 'finanzapp-gastos-temp';
 
-export function useGastos() {
+export function useGastos(userId: string | null) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
 
-  // Cargar gastos del localStorage al iniciar
+  // Cargar gastos del localStorage al iniciar o cambiar usuario
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const storageKey = obtenerStorageKey(userId);
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
       try {
         setGastos(JSON.parse(stored));
       } catch (error) {
         console.error('Error al cargar gastos:', error);
       }
+    } else {
+      setGastos([]);
     }
-  }, []);
+  }, [userId]);
 
   // Guardar gastos en localStorage cuando cambien
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gastos));
-  }, [gastos]);
+    if (userId) {
+      const storageKey = obtenerStorageKey(userId);
+      localStorage.setItem(storageKey, JSON.stringify(gastos));
+    }
+  }, [gastos, userId]);
 
   const agregarGasto = (gasto: Omit<Gasto, 'id'>) => {
     const nuevoGasto: Gasto = {

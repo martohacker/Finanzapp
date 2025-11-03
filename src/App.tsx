@@ -1,5 +1,6 @@
 import { useGastos } from './hooks/useGastos';
 import { useMoneda } from './hooks/useMoneda';
+import { useAuth } from './hooks/useAuth';
 import { GastoForm } from './components/GastoForm';
 import { GastoList } from './components/GastoList';
 import { GastosChart } from './components/GastosChart';
@@ -7,13 +8,32 @@ import { Estadisticas } from './components/Estadisticas';
 import { ResumenConversion } from './components/ResumenConversion';
 import { SelectorMoneda } from './components/SelectorMoneda';
 import { BannerInstalacion } from './components/BannerInstalacion';
-import { Wallet } from 'lucide-react';
+import { Login } from './components/Login';
+import { Wallet, LogOut, User } from 'lucide-react';
 
 function App() {
-  const { gastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastos();
-  const { moneda, cambiarMoneda, obtenerMoneda } = useMoneda();
+  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion } = useAuth();
+  const { gastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastos(usuarioActual?.id || null);
+  const { moneda, cambiarMoneda, obtenerMoneda } = useMoneda(usuarioActual?.id || null);
   const estadisticas = calcularEstadisticas();
   const monedaActual = obtenerMoneda();
+
+  // Mostrar pantalla de carga mientras se verifica la sesión
+  if (cargandoAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no hay usuario, mostrar pantalla de login
+  if (!usuarioActual) {
+    return <Login onLogin={login} onRegistrar={registrar} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -30,7 +50,21 @@ function App() {
                 <p className="text-sm sm:text-base text-gray-600">Control total de tus finanzas personales</p>
               </div>
             </div>
-            <SelectorMoneda monedaActual={moneda} onCambiarMoneda={cambiarMoneda} />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+                <User size={18} className="text-primary-600" />
+                <span className="text-sm font-medium text-gray-700">{usuarioActual.nombre}</span>
+              </div>
+              <SelectorMoneda monedaActual={moneda} onCambiarMoneda={cambiarMoneda} />
+              <button
+                onClick={cerrarSesion}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
+                title="Cerrar sesión"
+              >
+                <LogOut size={18} />
+                <span className="hidden sm:inline">Salir</span>
+              </button>
+            </div>
           </div>
         </header>
 
