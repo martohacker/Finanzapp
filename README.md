@@ -52,11 +52,20 @@ npm run dev
 
 ### Configuración Inicial
 
-1. **Habilita GitHub Pages en tu repositorio**:
-   - Ve a `Settings` → `Pages` en tu repositorio de GitHub
-   - En `Source`, selecciona `GitHub Actions`
+1. **Haz tu repositorio público** (necesario para GitHub Pages gratuito):
+   - Ve a `Settings` → `General`
+   - Desplázate hasta la sección "Danger Zone" al final
+   - Haz clic en "Change repository visibility"
+   - Selecciona "Make public" y confirma
+   
+   ⚠️ **Nota**: GitHub Pages gratuito solo funciona con repositorios públicos. Si necesitas mantenerlo privado, considera usar GitHub Enterprise (de pago) u otra plataforma como Vercel/Netlify.
 
-2. **Haz push de tu código**:
+2. **Habilita GitHub Pages**:
+   - Ve a `Settings` → `Pages` en tu repositorio de GitHub
+   - En `Source`, selecciona `GitHub Actions` (NO "Branch")
+   - Guarda los cambios
+
+3. **Haz push de tu código**:
    ```bash
    git add .
    git commit -m "Configurar para GitHub Pages"
