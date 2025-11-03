@@ -48,21 +48,33 @@ npm run dev
 
 La aplicación es una PWA (Progressive Web App) que puedes instalar en tu dispositivo:
 
-### En móvil (Android/iOS):
-1. Abre la aplicación en tu navegador
-2. Verás un banner o menú con la opción "Instalar" o "Agregar a la pantalla principal"
-3. Sigue las instrucciones para instalarla
+### En iPhone/iPad (iOS):
+1. **Abre la aplicación en Safari** (no funciona en Chrome u otros navegadores)
+2. Verás un **banner azul en la parte superior** con instrucciones
+3. Toca el botón **Compartir** (⬆️) en la barra inferior de Safari
+4. Desplázate y selecciona **"Agregar a pantalla principal"**
+5. Toca **"Agregar"** para confirmar
+6. ¡Listo! La app aparecerá en tu pantalla principal como una app nativa
+
+**💡 Tip**: Si no ves el banner, simplemente sigue los pasos 3-5 directamente.
+
+### En Android:
+1. Abre la aplicación en Chrome
+2. Verás un banner con la opción "Instalar" o "Agregar a la pantalla principal"
+3. Toca "Instalar" y confirma
 
 ### En Desktop (Chrome/Edge):
 1. Abre la aplicación en tu navegador
-2. Haz clic en el icono de instalación en la barra de direcciones (o ve a Menú → Instalar)
-3. Confirma la instalación
+2. Haz clic en el icono de instalación (➕) en la barra de direcciones
+3. O ve a Menú (⋮) → Instalar "FinanzApp"
+4. Confirma la instalación
 
 ### Ventajas de instalarla:
-- Funciona offline (una vez cargada)
-- Se actualiza automáticamente
-- Acceso rápido desde el escritorio/pantalla principal
-- Experiencia similar a una app nativa
+- ✅ Funciona offline (una vez cargada)
+- ✅ Se actualiza automáticamente
+- ✅ Acceso rápido desde el escritorio/pantalla principal
+- ✅ Experiencia similar a una app nativa
+- ✅ No requiere descargar desde App Store
 
 ## Scripts
 

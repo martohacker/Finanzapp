@@ -6,6 +6,7 @@ import { GastosChart } from './components/GastosChart';
 import { Estadisticas } from './components/Estadisticas';
 import { ResumenConversion } from './components/ResumenConversion';
 import { SelectorMoneda } from './components/SelectorMoneda';
+import { BannerInstalacion } from './components/BannerInstalacion';
 import { Wallet } from 'lucide-react';
 
 function App() {
@@ -32,6 +33,9 @@ function App() {
             <SelectorMoneda monedaActual={moneda} onCambiarMoneda={cambiarMoneda} />
           </div>
         </header>
+
+        {/* Banner de instalación (iOS) */}
+        <BannerInstalacion />
 
         {/* Estadísticas */}
         <div className="mb-8">
