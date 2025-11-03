@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+release
+.electron-builder
 
 # GitHub Pages
 .vercel

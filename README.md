@@ -19,6 +19,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - ✅ Almacenamiento local (los datos se guardan en tu navegador)
 - ✅ Interfaz moderna y completamente responsive
 - ✅ **Instalable como PWA** - Puedes instalarla en tu dispositivo
+- ✅ **App de escritorio** - Instalador para Windows (.exe), Mac (.dmg) y Linux (.AppImage)
 
 ## Tecnologías
 
@@ -29,6 +30,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - Recharts (gráficos)
 - Lucide React (iconos)
 - PWA (Progressive Web App)
+- Electron (App de escritorio)
 
 ## Instalación Local
 
@@ -76,12 +78,44 @@ La aplicación es una PWA (Progressive Web App) que puedes instalar en tu dispos
 - ✅ Experiencia similar a una app nativa
 - ✅ No requiere descargar desde App Store
 
+## App de Escritorio (Windows/Mac/Linux)
+
+Puedes crear un instalador para tu sistema operativo:
+
+### Windows:
+```bash
+npm run build:electron
+```
+
+**Nota**: Si aparece un error de permisos al final, el ejecutable ya se habrá generado en `release/win-unpacked/FinanzApp.exe`. Puedes usar ese ejecutable directamente.
+
+Esto generará:
+- **Portable**: `release/FinanzApp-1.0.1-portable.exe` (si se completa el empaquetado)
+- **Carpeta completa**: `release/win-unpacked/FinanzApp.exe` (siempre disponible, ejecuta este si falla el empaquetado)
+
+### Características de la app de escritorio:
+- ✅ Ejecutable portable (no requiere instalación)
+- ✅ Acceso directo - solo ejecuta el .exe
+- ✅ Funciona offline (una vez cargada)
+- ✅ No requiere navegador
+- ✅ Experiencia de app nativa
+- ✅ Todos los datos se guardan localmente en la carpeta del usuario
+
+### Desarrollo:
+```bash
+npm run electron:dev
+```
+Ejecuta la app de escritorio en modo desarrollo, conectándose al servidor de desarrollo de Vite.
+
 ## Scripts
 
-- `npm run dev` - Inicia el servidor de desarrollo
-- `npm run build` - Construye la aplicación para producción
-- `npm run preview` - Previsualiza la build de producción
+- `npm run dev` - Inicia el servidor de desarrollo web
+- `npm run electron:dev` - Inicia la app de escritorio en modo desarrollo
+- `npm run build` - Construye la aplicación web para producción
+- `npm run build:electron` - Construye e instala la app de escritorio (genera .exe)
+- `npm run preview` - Previsualiza la build de producción web
 - `npm run lint` - Ejecuta el linter
+- `npm run generate-icons` - Genera los iconos PWA
 
 ## Despliegue en GitHub Pages
 
