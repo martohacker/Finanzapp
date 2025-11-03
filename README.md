@@ -5,6 +5,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 ## Características
 
 - ✅ Agregar y gestionar gastos
+- ✅ **Editar gastos** - Modifica cualquier gasto existente
 - ✅ Categorización de gastos (8 categorías predefinidas)
 - ✅ Gráficos interactivos (pastel y barras)
 - ✅ Estadísticas detalladas:
@@ -17,6 +18,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - ✅ Conversión automática a pesos argentinos con cotizaciones en tiempo real
 - ✅ Almacenamiento local (los datos se guardan en tu navegador)
 - ✅ Interfaz moderna y completamente responsive
+- ✅ **Instalable como PWA** - Puedes instalarla en tu dispositivo
 
 ## Tecnologías
 
@@ -26,6 +28,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - Tailwind CSS
 - Recharts (gráficos)
 - Lucide React (iconos)
+- PWA (Progressive Web App)
 
 ## Instalación Local
 
@@ -40,6 +43,26 @@ npm run dev
 ```
 
 3. Abre tu navegador en `http://localhost:5173`
+
+## Instalar como App (PWA)
+
+La aplicación es una PWA (Progressive Web App) que puedes instalar en tu dispositivo:
+
+### En móvil (Android/iOS):
+1. Abre la aplicación en tu navegador
+2. Verás un banner o menú con la opción "Instalar" o "Agregar a la pantalla principal"
+3. Sigue las instrucciones para instalarla
+
+### En Desktop (Chrome/Edge):
+1. Abre la aplicación en tu navegador
+2. Haz clic en el icono de instalación en la barra de direcciones (o ve a Menú → Instalar)
+3. Confirma la instalación
+
+### Ventajas de instalarla:
+- Funciona offline (una vez cargada)
+- Se actualiza automáticamente
+- Acceso rápido desde el escritorio/pantalla principal
+- Experiencia similar a una app nativa
 
 ## Scripts
 
@@ -72,30 +95,25 @@ npm run dev
    git push origin main
    ```
 
-3. **El workflow se ejecutará automáticamente**:
+4. **El workflow se ejecutará automáticamente**:
    - Ve a la pestaña `Actions` en tu repositorio
    - Verás el workflow "Deploy to GitHub Pages" ejecutándose
    - Una vez completado, tu sitio estará disponible en:
      `https://[tu-usuario].github.io/[nombre-del-repo]/`
 
-### Deploy Manual
+### Actualización Automática
 
-Si necesitas desplegar manualmente, puedes:
-- Ir a `Actions` → `Deploy to GitHub Pages` → `Run workflow`
-
-### Nota sobre el Base Path
-
-El workflow está configurado para detectar automáticamente el nombre del repositorio. Si tu repositorio se llama `Finanzapp`, la URL será:
-`https://[usuario].github.io/Finanzapp/`
+Cada vez que hagas `git push` a la rama `main`, el sitio se actualizará automáticamente en 2-3 minutos.
 
 ## Uso
 
 1. **Agregar un gasto**: Completa el formulario con descripción, monto, fecha y categoría
-2. **Seleccionar moneda**: Usa el selector en el header para cambiar la moneda
-3. **Ver estadísticas**: Las tarjetas superiores muestran tus estadísticas principales
-4. **Visualizar gráficos**: Los gráficos muestran la distribución de tus gastos por categoría
-5. **Conversión a pesos**: Si usas otra moneda, verás automáticamente la conversión a pesos argentinos
-6. **Eliminar gastos**: Haz clic en el icono de basura para eliminar un gasto
+2. **Editar un gasto**: Haz clic en el icono de lápiz (azul) junto a cualquier gasto
+3. **Seleccionar moneda**: Usa el selector en el header para cambiar la moneda
+4. **Ver estadísticas**: Las tarjetas superiores muestran tus estadísticas principales
+5. **Visualizar gráficos**: Los gráficos muestran la distribución de tus gastos por categoría
+6. **Conversión a pesos**: Si usas otra moneda, verás automáticamente la conversión a pesos argentinos
+7. **Eliminar gastos**: Haz clic en el icono de basura para eliminar un gasto
 
 ## Categorías
 
