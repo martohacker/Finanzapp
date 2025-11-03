@@ -11,7 +11,8 @@
     "electron": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "tsc && vite build",
-    "build:electron": "npm run build && electron-builder",
+    "build:electron": "npm run build:electron-only && electron-builder",
+    "build:electron-only": "cross-env ELECTRON=true npm run build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "generate-icons": "node scripts/generate-pwa-icons.cjs"
@@ -32,6 +33,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12",
     "eslint": "^8.55.0",

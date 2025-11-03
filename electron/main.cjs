@@ -25,8 +25,28 @@ function createWindow() {
     win.webContents.openDevTools();
   } else {
     // En producción, cargar desde los archivos build
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Determinar la ruta correcta según si está empaquetado o no
+    let indexPath;
+    if (app.isPackaged) {
+      // Empaquetado: archivos en resources/app.asar/dist/
+      indexPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+    } else {
+      // No empaquetado: archivos en ../dist/
+      indexPath = path.join(__dirname, '../dist/index.html');
+    }
+    
+    win.loadFile(indexPath).catch(err => {
+      console.error('Error al cargar la app:', err);
+      console.error('Ruta intentada:', indexPath);
+      win.webContents.openDevTools();
+    });
   }
+
+  // Manejar errores de carga
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Error de carga:', errorCode, errorDescription);
+    win.webContents.openDevTools();
+  });
 
   // Manejar enlaces externos
   win.webContents.setWindowOpenHandler(({ url }) => {

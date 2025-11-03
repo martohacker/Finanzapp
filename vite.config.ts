@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
-const basePath = process.env.VITE_BASE_PATH || '/';
+// Para Electron, usar rutas relativas. Para web, usar el basePath configurado
+const isElectron = process.env.ELECTRON === 'true';
+const basePath = isElectron ? './' : (process.env.VITE_BASE_PATH || '/');
 
 export default defineConfig({
   plugins: [
