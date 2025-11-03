@@ -36,6 +36,14 @@ export function useGastos() {
     setGastos(gastos.filter(g => g.id !== id));
   };
 
+  const editarGasto = (id: string, gastoActualizado: Omit<Gasto, 'id'>) => {
+    setGastos(gastos.map(g => 
+      g.id === id 
+        ? { ...gastoActualizado, id }
+        : g
+    ));
+  };
+
   const calcularEstadisticas = (): Estadisticas => {
     const ahora = new Date();
     const fechaActual = ahora.toISOString().split('T')[0];
@@ -83,6 +91,7 @@ export function useGastos() {
     gastos,
     agregarGasto,
     eliminarGasto,
+    editarGasto,
     calcularEstadisticas,
   };
 }

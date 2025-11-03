@@ -9,7 +9,7 @@ import { SelectorMoneda } from './components/SelectorMoneda';
 import { Wallet } from 'lucide-react';
 
 function App() {
-  const { gastos, agregarGasto, eliminarGasto, calcularEstadisticas } = useGastos();
+  const { gastos, agregarGasto, eliminarGasto, editarGasto, calcularEstadisticas } = useGastos();
   const { moneda, cambiarMoneda, obtenerMoneda } = useMoneda();
   const estadisticas = calcularEstadisticas();
   const monedaActual = obtenerMoneda();
@@ -62,7 +62,12 @@ function App() {
 
           {/* Lista de gastos */}
           <div className="lg:col-span-2">
-            <GastoList gastos={gastos} onEliminarGasto={eliminarGasto} moneda={monedaActual} />
+            <GastoList 
+              gastos={gastos} 
+              onEliminarGasto={eliminarGasto} 
+              onEditarGasto={editarGasto}
+              moneda={monedaActual} 
+            />
           </div>
         </div>
       </div>
