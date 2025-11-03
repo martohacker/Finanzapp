@@ -9,6 +9,7 @@ import { ResumenConversion } from './components/ResumenConversion';
 import { SelectorMoneda } from './components/SelectorMoneda';
 import { BannerInstalacion } from './components/BannerInstalacion';
 import { Login } from './components/Login';
+import { ExportarDatos } from './components/ExportarDatos';
 import { Wallet, LogOut, User } from 'lucide-react';
 
 function App() {
@@ -73,6 +74,15 @@ function App() {
 
         {/* Banner de instalación (iOS) */}
         <BannerInstalacion />
+
+        {/* Exportar/Importar datos */}
+        {!usandoSupabase && (
+          <ExportarDatos 
+            gastos={gastos} 
+            usuarioId={usuarioActual.id}
+            usuarioNombre={usuarioActual.nombre}
+          />
+        )}
 
         {/* Estadísticas */}
         <div className="mb-8">

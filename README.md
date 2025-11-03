@@ -206,6 +206,8 @@ Puedes configurar Supabase para tener:
 
 **Sin Supabase**: Si no lo configuras, la app usa localStorage como fallback (datos locales en el navegador).
 
+**Otras opciones**: Ver [OPCIONES_BASE_DATOS.md](./OPCIONES_BASE_DATOS.md) para más alternativas gratuitas (Firebase, MongoDB Atlas, etc.)
+
 ### Características de seguridad:
 - Las contraseñas se hashean (SHA-256 local o bcrypt en Supabase)
 - Cada usuario tiene sus propios datos aislados
