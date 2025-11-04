@@ -120,6 +120,8 @@ Ejecuta la app de escritorio en modo desarrollo, conectándose al servidor de de
 
 ## Despliegue en GitHub Pages
 
+**⚠️ IMPORTANTE**: Para que Firebase funcione en GitHub Pages, debes configurar los secrets de Firebase en GitHub (Settings → Secrets and variables → Actions).
+
 ### Configuración Inicial
 
 1. **Haz tu repositorio público** (necesario para GitHub Pages gratuito):
