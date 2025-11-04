@@ -48,8 +48,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Los usuarios solo pueden leer/escribir sus propios gastos
     match /gastos/{gastoId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.user_id;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;
+      // Permitir lectura individual (get) y queries (list)
+      // Para queries, Firestore verifica cada documento individualmente
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.user_id;
+      
+      // Permitir escritura si el usuario está autenticado y el user_id coincide
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.user_id;
+      
+      // Permitir creación si el usuario está autenticado y el user_id coincide
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.user_id;
     }
   }
 }
@@ -57,20 +67,22 @@ service cloud.firestore {
 
 3. Haz clic en "Publish"
 
-### 5.1. Crear índice compuesto (importante)
+### 5.1. Crear índice compuesto (⚠️ MUY IMPORTANTE - REQUERIDO)
 
-Cuando Firebase te muestre un error de índice faltante al hacer consultas:
+**Este paso es OBLIGATORIO** para que las consultas funcionen en producción (GitHub Pages). Sin este índice, verás errores 400.
 
-1. Haz clic en el enlace que aparece en el error (o ve a **Firestore Database** → **Indexes**)
+1. Ve a **Firestore Database** → **Indexes**
 2. Haz clic en **"Create Index"**
 3. Configura:
    - **Collection ID**: `gastos`
    - **Fields to index**:
-     - `user_id` (Ascending)
-     - `fecha` (Descending)
+     - `user_id` (Ascending) - Primera columna
+     - `fecha` (Descending) - Segunda columna
    - **Query scope**: Collection
 4. Haz clic en **"Create"**
-5. Espera 1-2 minutos a que se cree el índice
+5. **Espera 1-5 minutos** a que se cree el índice (verás un estado "Building" → "Enabled")
+
+**Nota:** Si ves un error de índice faltante en la consola del navegador, Firebase te dará un enlace directo para crear el índice. Haz clic en ese enlace.
 
 ### 6. Obtener las credenciales
 
@@ -184,6 +196,18 @@ Luego abre el archivo `.env` con tu editor y pega las credenciales.
 5. Activa el toggle "Enable"
 6. Haz clic en "Save"
 
+### 8.1. Autorizar dominio de GitHub Pages (IMPORTANTE para producción)
+
+Para que Firebase funcione en GitHub Pages, necesitas autorizar el dominio:
+
+1. Ve a **Build** → **Authentication** → **Settings**
+2. Desplázate hasta **Authorized domains**
+3. Haz clic en **"Add domain"**
+4. Agrega tu dominio de GitHub Pages (ejemplo: `tu-usuario.github.io` o `tu-usuario.github.io/Finanzapp`)
+5. Haz clic en **"Add"**
+
+**Nota:** Si tu dominio es `https://tu-usuario.github.io/Finanzapp/`, agrega solo `tu-usuario.github.io` (sin el path `/Finanzapp`)
+
 ### 9. Reiniciar el servidor
 
 Este paso lo haces en la **terminal** (donde ejecutaste `npm run dev` al principio).
@@ -229,6 +253,54 @@ Navegador
 1. Presionar `Ctrl + C` para detenerlo
 2. Ejecutar `npm run dev` de nuevo
 3. Abrir la consola del navegador (F12) para verificar
+
+## ⚠️ Solución: Errores 400 en producción (GitHub Pages)
+
+Si ves errores **400** o **"WebChannelConnection RPC 'Listen' stream transport errored"** en GitHub Pages pero funciona localmente:
+
+### 1. Verificar el índice compuesto (MÁS COMÚN)
+
+El error 400 suele indicar que falta el índice compuesto:
+
+1. Ve a [Firebase Console](https://console.firebase.google.com) → Tu proyecto
+2. Ve a **Firestore Database** → **Indexes**
+3. Verifica que exista un índice con:
+   - Collection: `gastos`
+   - Fields: `user_id` (Ascending), `fecha` (Descending)
+   - Estado: **Enabled** (no "Building")
+4. Si no existe o está "Building", créalo o espera a que termine (ver paso 5.1)
+
+### 2. Verificar dominios autorizados
+
+1. Ve a **Authentication** → **Settings**
+2. En **Authorized domains**, verifica que esté tu dominio de GitHub Pages
+3. Si no está, agrégalo (ver paso 8.1)
+
+### 3. Verificar reglas de seguridad
+
+1. Ve a **Firestore Database** → **Rules**
+2. Verifica que las reglas sean exactamente como en el paso 5
+3. Haz clic en **"Publish"** si hiciste cambios
+
+### 4. Verificar variables de entorno en GitHub
+
+1. Ve a tu repositorio en GitHub → **Settings** → **Secrets and variables** → **Actions**
+2. Verifica que todos los secrets de Firebase estén configurados correctamente
+3. Los nombres deben ser exactamente:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+
+### 5. Forzar nuevo despliegue
+
+Después de hacer cambios, fuerza un nuevo despliegue:
+
+1. En GitHub, ve a **Actions**
+2. Haz clic en **"Run workflow"** → **"Run workflow"**
+3. Espera a que termine el despliegue
 
 ## ⚠️ Solución: Error "API key not valid"
 

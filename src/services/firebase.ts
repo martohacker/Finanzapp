@@ -24,6 +24,11 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDoma
     auth = getAuth(app);
     db = getFirestore(app);
     console.log('✅ Firebase inicializado correctamente');
+    console.log('📍 Entorno:', {
+      esProduccion: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+      hostname: window.location.hostname,
+      url: window.location.origin,
+    });
   } catch (error) {
     console.error('❌ Error al inicializar Firebase:', error);
   }

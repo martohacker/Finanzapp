@@ -67,12 +67,23 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             const storageKey = obtenerStorageKey(userId);
             localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Error al cargar desde Firebase:', error);
           console.error('Detalles del error:', {
             message: error instanceof Error ? error.message : String(error),
-            code: (error as any)?.code,
+            code: error?.code,
           });
+          
+          // Si es un error de índice faltante, mostrar ayuda
+          if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
+            console.error('🔴 ERROR: Falta crear un índice compuesto en Firestore.');
+            console.error('📋 Ve a Firebase Console → Firestore Database → Indexes');
+            console.error('📋 Crea un índice para:');
+            console.error('   - Collection: gastos');
+            console.error('   - Fields: user_id (Ascending), fecha (Descending)');
+            console.error('   - Scope: Collection');
+          }
+          
           // Fallback a localStorage
           cargarDesdeLocalStorage();
         }
@@ -149,13 +160,19 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           });
           console.log('✅ Gasto actualizado en Firebase');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error al guardar en Firebase:', error);
         console.error('Detalles del error:', {
           message: error instanceof Error ? error.message : String(error),
-          code: (error as any)?.code,
+          code: error?.code,
           stack: error instanceof Error ? error.stack : undefined,
         });
+        
+        // Si es un error de permisos, mostrar ayuda
+        if (error?.code === 'permission-denied') {
+          console.error('🔴 ERROR: Permisos denegados. Verifica las reglas de seguridad en Firestore.');
+        }
+        
         guardarEnLocalStorage();
       }
     } else {
