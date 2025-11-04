@@ -38,13 +38,28 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
         console.log('📥 Intentando cargar gastos desde Firebase para userId:', userId);
         try {
           const gastosRef = collection(db, 'gastos');
-          const q = query(
-            gastosRef,
-            where('user_id', '==', userId),
-            orderBy('fecha', 'desc')
-          );
+          
+          // Intentar primero con orderBy (requiere índice compuesto)
+          let querySnapshot;
+          try {
+            const q = query(
+              gastosRef,
+              where('user_id', '==', userId),
+              orderBy('fecha', 'desc')
+            );
+            querySnapshot = await getDocs(q);
+            console.log('✅ Query con orderBy exitosa');
+          } catch (orderByError: any) {
+            // Si falla con orderBy, intentar sin orderBy y ordenar en el cliente
+            console.warn('⚠️ Query con orderBy falló, intentando sin orderBy:', orderByError?.code);
+            const q = query(
+              gastosRef,
+              where('user_id', '==', userId)
+            );
+            querySnapshot = await getDocs(q);
+            console.log('✅ Query sin orderBy exitosa (ordenando en cliente)');
+          }
 
-          const querySnapshot = await getDocs(q);
           const gastosConvertidos: Gasto[] = [];
 
           querySnapshot.forEach((docSnap) => {
@@ -58,6 +73,14 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
               moneda: data.moneda || 'ARS', // Por defecto ARS si no existe
             });
           });
+
+          // Ordenar por fecha descendente si no se ordenó en la query
+          if (gastosConvertidos.length > 0) {
+            gastosConvertidos.sort((a, b) => {
+              // Comparar fechas en formato ISO (YYYY-MM-DD)
+              return b.fecha.localeCompare(a.fecha);
+            });
+          }
 
           console.log(`✅ Cargados ${gastosConvertidos.length} gastos desde Firebase`);
           setGastos(gastosConvertidos);
@@ -216,12 +239,23 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
     if (usandoFirebase && isFirebaseConfigured() && db && userId) {
       // Recargar gastos para obtener el ID real de Firebase
       const gastosRef = collection(db, 'gastos');
-      const q = query(
-        gastosRef,
-        where('user_id', '==', userId),
-        orderBy('fecha', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
+      let querySnapshot;
+      try {
+        const q = query(
+          gastosRef,
+          where('user_id', '==', userId),
+          orderBy('fecha', 'desc')
+        );
+        querySnapshot = await getDocs(q);
+      } catch {
+        // Si falla con orderBy, intentar sin orderBy
+        const q = query(
+          gastosRef,
+          where('user_id', '==', userId)
+        );
+        querySnapshot = await getDocs(q);
+      }
+      
       const gastosActualizados: Gasto[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -234,6 +268,9 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           moneda: data.moneda || 'ARS', // Por defecto ARS
         });
       });
+      
+      // Ordenar por fecha si no se ordenó en la query
+      gastosActualizados.sort((a, b) => b.fecha.localeCompare(a.fecha));
       setGastos(gastosActualizados);
     }
   };
