@@ -11,7 +11,7 @@ import {
   doc,
   Timestamp
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../services/firebase';
+import { db, auth, isFirebaseConfigured } from '../services/firebase';
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
 
@@ -83,11 +83,27 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           }
 
           console.log(`✅ Cargados ${gastosConvertidos.length} gastos desde Firebase`);
+          
+          // Verificar si hay gastos en localStorage que no están en Firebase
+          const storageKey = obtenerStorageKey(userId);
+          const storedLocal = localStorage.getItem(storageKey);
+          if (storedLocal && gastosConvertidos.length === 0) {
+            try {
+              const gastosLocal = JSON.parse(storedLocal);
+              if (gastosLocal && gastosLocal.length > 0) {
+                console.warn(`⚠️ Hay ${gastosLocal.length} gastos en localStorage pero 0 en Firebase.`);
+                console.warn('💡 Los gastos guardados localmente no se han sincronizado con Firebase.');
+                console.warn('💡 Agregar un nuevo gasto desde la app debería sincronizarlo.');
+              }
+            } catch (e) {
+              // Ignorar errores de parsing
+            }
+          }
+          
           setGastos(gastosConvertidos);
           
           // Guardar también en localStorage como backup
           if (gastosConvertidos.length > 0) {
-            const storageKey = obtenerStorageKey(userId);
             localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
           }
         } catch (error: any) {
@@ -153,11 +169,40 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
 
     if (usandoFirebase && isFirebaseConfigured() && db && userId) {
       try {
+        // Verificar autenticación antes de escribir
+        if (auth) {
+          const currentUser = auth.currentUser;
+          if (!currentUser) {
+            console.error('❌ No hay usuario autenticado en Firebase');
+            console.error('💡 El usuario debe estar autenticado para escribir en Firestore');
+            guardarEnLocalStorage();
+            return;
+          }
+          if (currentUser.uid !== userId) {
+            console.error('❌ El userId no coincide con el usuario autenticado');
+            console.error('   userId proporcionado:', userId);
+            console.error('   auth.currentUser.uid:', currentUser.uid);
+            guardarEnLocalStorage();
+            return;
+          }
+          console.log('✅ Usuario autenticado correctamente:', {
+            uid: currentUser.uid,
+            email: currentUser.email,
+          });
+        }
+        
         const gastosRef = collection(db, 'gastos');
         
         if (esNuevo) {
           // Insertar nuevo gasto
-          console.log('💾 Guardando nuevo gasto en Firebase:', gasto.descripcion);
+          console.log('💾 Guardando nuevo gasto en Firebase:', {
+            descripcion: gasto.descripcion,
+            monto: gasto.monto,
+            categoria: gasto.categoria,
+            fecha: gasto.fecha,
+            moneda: gasto.moneda || 'ARS',
+            userId: userId,
+          });
           const docRef = await addDoc(gastosRef, {
             user_id: userId,
             descripcion: gasto.descripcion,
@@ -169,6 +214,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             updated_at: Timestamp.now(),
           });
           console.log('✅ Gasto guardado en Firebase con ID:', docRef.id);
+          console.log('📋 Verifica en Firebase Console → Firestore → Data → gastos que el documento se haya creado correctamente.');
         } else {
           // Actualizar gasto existente
           console.log('💾 Actualizando gasto en Firebase:', gasto.id);
@@ -191,9 +237,25 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           stack: error instanceof Error ? error.stack : undefined,
         });
         
-        // Si es un error de permisos, mostrar ayuda
+        // Si es un error de permisos, mostrar ayuda detallada
         if (error?.code === 'permission-denied') {
-          console.error('🔴 ERROR: Permisos denegados. Verifica las reglas de seguridad en Firestore.');
+          console.error('🔴 ERROR: Permisos denegados al escribir en Firestore.');
+          console.error('📋 Verifica en Firebase Console:');
+          console.error('   1. Firestore Database → Rules');
+          console.error('   2. Las reglas deben permitir create con:');
+          console.error('      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;');
+          console.error('   3. Verifica que el usuario esté autenticado: userId =', userId);
+          console.error('   4. Verifica que el user_id en el documento coincida con el usuario autenticado');
+        }
+        
+        // Si es un error 400, puede ser un problema de reglas o dominio
+        if (error?.code === 'invalid-argument' || error?.message?.includes('400')) {
+          console.error('🔴 ERROR 400: Problema con la escritura en Firestore.');
+          console.error('📋 Posibles causas:');
+          console.error('   1. Reglas de seguridad bloqueando la escritura');
+          console.error('   2. Dominio no autorizado en Firebase Authentication');
+          console.error('   3. Usuario no autenticado correctamente');
+          console.error('   4. Verifica en Firebase Console → Authentication → Settings → Authorized domains');
         }
         
         guardarEnLocalStorage();
