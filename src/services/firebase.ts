@@ -23,11 +23,20 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDoma
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
+    console.log('✅ Firebase inicializado correctamente');
   } catch (error) {
-    console.warn('⚠️ Error al inicializar Firebase:', error);
+    console.error('❌ Error al inicializar Firebase:', error);
   }
 } else {
-  console.warn('⚠️ Firebase no está configurado. Usando localStorage como fallback.');
+  console.warn('⚠️ Firebase no está configurado. Variables faltantes:', {
+    apiKey: !firebaseConfig.apiKey ? 'FALTA' : `OK (${firebaseConfig.apiKey.substring(0, 10)}...)`,
+    authDomain: !firebaseConfig.authDomain ? 'FALTA' : `OK (${firebaseConfig.authDomain})`,
+    projectId: !firebaseConfig.projectId ? 'FALTA' : `OK (${firebaseConfig.projectId})`,
+    storageBucket: !firebaseConfig.storageBucket ? 'FALTA' : 'OK',
+    messagingSenderId: !firebaseConfig.messagingSenderId ? 'FALTA' : 'OK',
+    appId: !firebaseConfig.appId ? 'FALTA' : 'OK',
+  });
+  console.warn('⚠️ Usando localStorage como fallback.');
 }
 
 export { app, auth, db };

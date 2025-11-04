@@ -35,6 +35,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
       
       if (usandoFirebase && isFirebaseConfigured() && db) {
         // Cargar desde Firebase
+        console.log('📥 Intentando cargar gastos desde Firebase para userId:', userId);
         try {
           const gastosRef = collection(db, 'gastos');
           const q = query(
@@ -58,6 +59,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             });
           });
 
+          console.log(`✅ Cargados ${gastosConvertidos.length} gastos desde Firebase`);
           setGastos(gastosConvertidos);
           
           // Guardar también en localStorage como backup
@@ -66,11 +68,20 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
           }
         } catch (error) {
-          console.error('Error al cargar desde Firebase:', error);
+          console.error('❌ Error al cargar desde Firebase:', error);
+          console.error('Detalles del error:', {
+            message: error instanceof Error ? error.message : String(error),
+            code: (error as any)?.code,
+          });
           // Fallback a localStorage
           cargarDesdeLocalStorage();
         }
       } else {
+        console.warn('⚠️ No se usa Firebase para cargar. Razones:', {
+          usandoFirebase,
+          isFirebaseConfigured: isFirebaseConfigured(),
+          tieneDb: !!db,
+        });
         // Cargar desde localStorage
         cargarDesdeLocalStorage();
       }
@@ -98,13 +109,22 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
 
   // Guardar en Firebase cuando cambien
   const guardarGasto = async (gasto: Gasto, esNuevo: boolean) => {
+    console.log('🔍 guardarGasto llamado:', {
+      usandoFirebase,
+      isFirebaseConfigured: isFirebaseConfigured(),
+      tieneDb: !!db,
+      tieneUserId: !!userId,
+      esNuevo,
+    });
+
     if (usandoFirebase && isFirebaseConfigured() && db && userId) {
       try {
         const gastosRef = collection(db, 'gastos');
         
         if (esNuevo) {
           // Insertar nuevo gasto
-          await addDoc(gastosRef, {
+          console.log('💾 Guardando nuevo gasto en Firebase:', gasto.descripcion);
+          const docRef = await addDoc(gastosRef, {
             user_id: userId,
             descripcion: gasto.descripcion,
             monto: gasto.monto,
@@ -114,8 +134,10 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             created_at: Timestamp.now(),
             updated_at: Timestamp.now(),
           });
+          console.log('✅ Gasto guardado en Firebase con ID:', docRef.id);
         } else {
           // Actualizar gasto existente
+          console.log('💾 Actualizando gasto en Firebase:', gasto.id);
           const gastoRef = doc(db, 'gastos', gasto.id);
           await updateDoc(gastoRef, {
             descripcion: gasto.descripcion,
@@ -125,12 +147,24 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             moneda: gasto.moneda || 'ARS', // Por defecto ARS
             updated_at: Timestamp.now(),
           });
+          console.log('✅ Gasto actualizado en Firebase');
         }
       } catch (error) {
-        console.error('Error al guardar en Firebase:', error);
+        console.error('❌ Error al guardar en Firebase:', error);
+        console.error('Detalles del error:', {
+          message: error instanceof Error ? error.message : String(error),
+          code: (error as any)?.code,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         guardarEnLocalStorage();
       }
     } else {
+      console.warn('⚠️ No se usa Firebase. Razones:', {
+        usandoFirebase,
+        isFirebaseConfigured: isFirebaseConfigured(),
+        tieneDb: !!db,
+        tieneUserId: !!userId,
+      });
       guardarEnLocalStorage();
     }
   };
