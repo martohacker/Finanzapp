@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
+import { MONEDAS, MONEDA_DEFAULT } from '../constants/monedas';
 import { Plus } from 'lucide-react';
 
 interface GastoFormProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
+  monedaActual?: string; // Código de moneda actual (ej: 'ARS', 'USD')
 }
 
-export function GastoForm({ onAgregarGasto }: GastoFormProps) {
+export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: GastoFormProps) {
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState(CATEGORIAS[0].id);
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [moneda, setMoneda] = useState(monedaActual);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +27,7 @@ export function GastoForm({ onAgregarGasto }: GastoFormProps) {
       monto: parseFloat(monto),
       categoria,
       fecha,
+      moneda,
     });
 
     // Resetear formulario
@@ -31,6 +35,7 @@ export function GastoForm({ onAgregarGasto }: GastoFormProps) {
     setMonto('');
     setCategoria(CATEGORIAS[0].id);
     setFecha(new Date().toISOString().split('T')[0]);
+    setMoneda(monedaActual);
   };
 
   return (
@@ -71,6 +76,26 @@ export function GastoForm({ onAgregarGasto }: GastoFormProps) {
         </div>
 
         <div>
+          <label htmlFor="moneda" className="block text-sm font-medium text-gray-700 mb-1">
+            Moneda
+          </label>
+          <select
+            id="moneda"
+            value={moneda}
+            onChange={(e) => setMoneda(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            {MONEDAS.map(mon => (
+              <option key={mon.codigo} value={mon.codigo}>
+                {mon.simbolo} {mon.codigo} - {mon.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
           <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-1">
             Fecha
           </label>
@@ -83,24 +108,24 @@ export function GastoForm({ onAgregarGasto }: GastoFormProps) {
             required
           />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
-          Categoría
-        </label>
-        <select
-          id="categoria"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        >
-          {CATEGORIAS.map(cat => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icono} {cat.nombre}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
+            Categoría
+          </label>
+          <select
+            id="categoria"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            {CATEGORIAS.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icono} {cat.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <button

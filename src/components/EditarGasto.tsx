@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
+import { MONEDAS, MONEDA_DEFAULT } from '../constants/monedas';
 import { X } from 'lucide-react';
 
 interface EditarGastoProps {
@@ -14,12 +15,14 @@ export function EditarGasto({ gasto, onGuardar, onCancelar }: EditarGastoProps) 
   const [monto, setMonto] = useState(gasto.monto.toString());
   const [categoria, setCategoria] = useState(gasto.categoria);
   const [fecha, setFecha] = useState(gasto.fecha);
+  const [moneda, setMoneda] = useState(gasto.moneda || MONEDA_DEFAULT);
 
   useEffect(() => {
     setDescripcion(gasto.descripcion);
     setMonto(gasto.monto.toString());
     setCategoria(gasto.categoria);
     setFecha(gasto.fecha);
+    setMoneda(gasto.moneda || MONEDA_DEFAULT);
   }, [gasto]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,6 +36,7 @@ export function EditarGasto({ gasto, onGuardar, onCancelar }: EditarGastoProps) 
       monto: parseFloat(monto),
       categoria,
       fecha,
+      moneda,
     });
   };
 
@@ -85,6 +89,26 @@ export function EditarGasto({ gasto, onGuardar, onCancelar }: EditarGastoProps) 
             </div>
 
             <div>
+              <label htmlFor="edit-moneda" className="block text-sm font-medium text-gray-700 mb-1">
+                Moneda
+              </label>
+              <select
+                id="edit-moneda"
+                value={moneda}
+                onChange={(e) => setMoneda(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                {MONEDAS.map(mon => (
+                  <option key={mon.codigo} value={mon.codigo}>
+                    {mon.simbolo} {mon.codigo} - {mon.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
               <label htmlFor="edit-fecha" className="block text-sm font-medium text-gray-700 mb-1">
                 Fecha
               </label>
@@ -97,24 +121,24 @@ export function EditarGasto({ gasto, onGuardar, onCancelar }: EditarGastoProps) 
                 required
               />
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="edit-categoria" className="block text-sm font-medium text-gray-700 mb-1">
-              Categoría
-            </label>
-            <select
-              id="edit-categoria"
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              {CATEGORIAS.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.icono} {cat.nombre}
-                </option>
-              ))}
-            </select>
+            <div>
+              <label htmlFor="edit-categoria" className="block text-sm font-medium text-gray-700 mb-1">
+                Categoría
+              </label>
+              <select
+                id="edit-categoria"
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                {CATEGORIAS.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icono} {cat.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

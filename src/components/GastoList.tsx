@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
-import { Moneda } from '../constants/monedas';
+import { Moneda, MONEDAS } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { ConversionPesos } from './ConversionPesos';
 import { EditarGasto } from './EditarGasto';
@@ -29,6 +29,11 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
     return CATEGORIAS.find(c => c.id === categoriaId) || CATEGORIAS[CATEGORIAS.length - 1];
   };
 
+  const obtenerMonedaGasto = (codigoMoneda?: string): Moneda => {
+    if (!codigoMoneda) return moneda;
+    return MONEDAS.find(m => m.codigo === codigoMoneda) || moneda;
+  };
+
   if (gastos.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -44,6 +49,9 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
       <div className="space-y-3">
         {gastos.map(gasto => {
           const categoria = obtenerCategoria(gasto.categoria);
+          const monedaGasto = obtenerMonedaGasto(gasto.moneda);
+          const mostrarConversion = monedaGasto.codigo !== 'ARS';
+          
           return (
             <div
               key={gasto.id}
@@ -67,15 +75,20 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
                   >
                     {categoria.nombre}
                   </span>
+                  {gasto.moneda && gasto.moneda !== moneda.codigo && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap flex-shrink-0">
+                      {monedaGasto.simbolo} {gasto.moneda}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">{formatearFecha(gasto.fecha)}</p>
                 
                 {/* Conversión en móvil */}
-                {moneda.codigo !== 'ARS' && (
+                {mostrarConversion && (
                   <div className="sm:hidden mt-2">
                     <ConversionPesos 
                       monto={gasto.monto} 
-                      monedaOrigen={moneda} 
+                      monedaOrigen={monedaGasto} 
                     />
                   </div>
                 )}
@@ -84,12 +97,14 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
               {/* Monto y acciones */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
                 <div className="text-left sm:text-right">
-                  <p className="font-bold text-base sm:text-lg text-gray-900 whitespace-nowrap">{formatearMonto(gasto.monto, moneda)}</p>
-                  {moneda.codigo !== 'ARS' && (
+                  <p className="font-bold text-base sm:text-lg text-gray-900 whitespace-nowrap">
+                    {formatearMonto(gasto.monto, monedaGasto)}
+                  </p>
+                  {mostrarConversion && (
                     <div className="hidden sm:block mt-1">
                       <ConversionPesos 
                         monto={gasto.monto} 
-                        monedaOrigen={moneda} 
+                        monedaOrigen={monedaGasto} 
                       />
                     </div>
                   )}

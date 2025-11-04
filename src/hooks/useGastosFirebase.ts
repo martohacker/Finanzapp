@@ -54,6 +54,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
               monto: data.monto,
               categoria: data.categoria,
               fecha: data.fecha,
+              moneda: data.moneda || 'ARS', // Por defecto ARS si no existe
             });
           });
 
@@ -109,6 +110,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             monto: gasto.monto,
             categoria: gasto.categoria,
             fecha: gasto.fecha,
+            moneda: gasto.moneda || 'ARS', // Por defecto ARS
             created_at: Timestamp.now(),
             updated_at: Timestamp.now(),
           });
@@ -120,6 +122,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             monto: gasto.monto,
             categoria: gasto.categoria,
             fecha: gasto.fecha,
+            moneda: gasto.moneda || 'ARS', // Por defecto ARS
             updated_at: Timestamp.now(),
           });
         }
@@ -177,6 +180,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           monto: data.monto,
           categoria: data.categoria,
           fecha: data.fecha,
+          moneda: data.moneda || 'ARS', // Por defecto ARS
         });
       });
       setGastos(gastosActualizados);

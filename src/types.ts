@@ -4,6 +4,7 @@ export interface Gasto {
   monto: number;
   categoria: string;
   fecha: string;
+  moneda?: string; // Código de moneda (ej: 'USD', 'ARS', 'EUR')
 }
 
 export interface Categoria {

@@ -108,7 +108,7 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario */}
           <div className="lg:col-span-1">
-            <GastoForm onAgregarGasto={agregarGasto} />
+            <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
           </div>
 
           {/* Lista de gastos */}

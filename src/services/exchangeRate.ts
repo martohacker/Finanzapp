@@ -1,5 +1,6 @@
 // API gratuita para obtener cotizaciones
 const API_BASE_URL = 'https://api.exchangerate.host';
+const API_ALTERNATIVE_URL = 'https://api.exchangerate-api.com/v4/latest';
 
 export interface ExchangeRates {
   [key: string]: number;
@@ -66,15 +67,36 @@ export async function obtenerTipoCambio(
   }
 
   try {
+    // Intentar con la API principal
     const response = await fetch(
       `${API_BASE_URL}/convert?from=${monedaOrigen}&to=${monedaDestino}`
     );
     const data = await response.json();
     
     if (data.success && data.result) {
-      return data.result;
+      // La API puede devolver el resultado directamente o como número
+      const resultado = typeof data.result === 'number' ? data.result : parseFloat(data.result);
+      if (!isNaN(resultado) && resultado > 0) {
+        return resultado;
+      }
     }
+
+    // Si la API principal falla, intentar con la alternativa
+    const altResponse = await fetch(`${API_ALTERNATIVE_URL}/${monedaOrigen}`);
+    const altData = await altResponse.json();
     
+    if (altData && altData.rates && altData.rates[monedaDestino]) {
+      return altData.rates[monedaDestino];
+    }
+
+    // Como último recurso, usar la API principal con latest y calcular manualmente
+    const latestResponse = await fetch(`${API_BASE_URL}/latest?base=${monedaOrigen}&symbols=${monedaDestino}`);
+    const latestData = await latestResponse.json();
+    
+    if (latestData.success && latestData.rates && latestData.rates[monedaDestino]) {
+      return latestData.rates[monedaDestino];
+    }
+
     return null;
   } catch (error) {
     console.error('Error al obtener tipo de cambio:', error);
