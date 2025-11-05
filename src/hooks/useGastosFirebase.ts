@@ -89,11 +89,63 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           const storedLocal = localStorage.getItem(storageKey);
           if (storedLocal && gastosConvertidos.length === 0) {
             try {
-              const gastosLocal = JSON.parse(storedLocal);
+              const gastosLocal: Gasto[] = JSON.parse(storedLocal);
               if (gastosLocal && gastosLocal.length > 0) {
                 console.warn(`⚠️ Hay ${gastosLocal.length} gastos en localStorage pero 0 en Firebase.`);
-                console.warn('💡 Los gastos guardados localmente no se han sincronizado con Firebase.');
-                console.warn('💡 Agregar un nuevo gasto desde la app debería sincronizarlo.');
+                console.warn('💡 Intentando sincronizar gastos locales con Firebase...');
+                
+                // Intentar sincronizar los gastos locales con Firebase
+                if (usandoFirebase && isFirebaseConfigured() && db && auth?.currentUser) {
+                  try {
+                    const gastosRef = collection(db, 'gastos');
+                    let sincronizados = 0;
+                    
+                    for (const gastoLocal of gastosLocal) {
+                      try {
+                        // Verificar si el gasto ya existe en Firebase (por ID)
+                        const q = query(
+                          gastosRef,
+                          where('user_id', '==', userId),
+                          where('descripcion', '==', gastoLocal.descripcion),
+                          where('fecha', '==', gastoLocal.fecha),
+                          where('monto', '==', gastoLocal.monto)
+                        );
+                        const existingDocs = await getDocs(q);
+                        
+                        if (existingDocs.empty) {
+                          // No existe, crear nuevo
+                          await addDoc(gastosRef, {
+                            user_id: userId,
+                            descripcion: gastoLocal.descripcion,
+                            monto: gastoLocal.monto,
+                            categoria: gastoLocal.categoria,
+                            fecha: gastoLocal.fecha,
+                            moneda: gastoLocal.moneda || 'ARS',
+                            created_at: Timestamp.now(),
+                            updated_at: Timestamp.now(),
+                          });
+                          sincronizados++;
+                        }
+                      } catch (syncError) {
+                        console.warn('⚠️ Error al sincronizar un gasto:', syncError);
+                      }
+                    }
+                    
+                    if (sincronizados > 0) {
+                      console.log(`✅ Sincronizados ${sincronizados} gastos con Firebase. Recargando...`);
+                      // Recargar gastos después de sincronizar
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    } else {
+                      console.warn('⚠️ No se pudieron sincronizar los gastos. Verifica las reglas de seguridad.');
+                    }
+                  } catch (syncError) {
+                    console.error('❌ Error al sincronizar gastos:', syncError);
+                  }
+                } else {
+                  console.warn('💡 No se puede sincronizar: Firebase no está configurado o usuario no autenticado.');
+                }
               }
             } catch (e) {
               // Ignorar errores de parsing
