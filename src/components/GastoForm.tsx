@@ -39,8 +39,11 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-3 sm:space-y-4">
-      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Agregar Gasto</h2>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
+      <div className="mb-4 sm:mb-5">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1">Agregar Gasto</h2>
+        <p className="text-xs sm:text-sm text-gray-600">Registra un nuevo gasto</p>
+      </div>
       
       <div>
         <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">

@@ -45,8 +45,11 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Gastos Recientes</h2>
-      <div className="space-y-2 sm:space-y-3">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1">Gastos Recientes</h2>
+        <p className="text-xs sm:text-sm text-gray-600">Historial de tus transacciones</p>
+      </div>
+      <div className="space-y-3 sm:space-y-4">
         {gastos.map(gasto => {
           const categoria = obtenerCategoria(gasto.categoria);
           const monedaGasto = obtenerMonedaGasto(gasto.moneda);

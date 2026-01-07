@@ -73,54 +73,76 @@ function App() {
         </header>
 
         {/* Banner de instalación (iOS) */}
-        <BannerInstalacion />
+        <div className="mb-6 sm:mb-8">
+          <BannerInstalacion />
+        </div>
 
         {/* Exportar/Importar datos */}
         {!usandoFirebase && (
-          <ExportarDatos 
-            gastos={gastos} 
-            usuarioId={usuarioActual.id}
-            usuarioNombre={usuarioActual.nombre}
-          />
+          <div className="mb-6 sm:mb-8">
+            <ExportarDatos 
+              gastos={gastos} 
+              usuarioId={usuarioActual.id}
+              usuarioNombre={usuarioActual.nombre}
+            />
+          </div>
         )}
 
-        {/* Estadísticas */}
-        <div className="mb-4 sm:mb-6">
-          <Estadisticas estadisticas={estadisticas} moneda={monedaActual} />
-        </div>
-
-        {/* Conversión a Pesos Argentinos (si la moneda no es ARS) */}
-        {monedaActual.codigo !== 'ARS' && (
+        {/* Sección: Estadísticas */}
+        <section className="mb-8 sm:mb-10">
           <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">📊 Resumen Financiero</h2>
+            <p className="text-sm text-gray-600">Vista general de tus gastos</p>
+          </div>
+          <Estadisticas estadisticas={estadisticas} moneda={monedaActual} />
+        </section>
+
+        {/* Sección: Conversión a Pesos Argentinos */}
+        {monedaActual.codigo !== 'ARS' && (
+          <section className="mb-8 sm:mb-10">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">💱 Conversión a Pesos</h2>
+              <p className="text-sm text-gray-600">Equivalencia en pesos argentinos</p>
+            </div>
             <ResumenConversion 
               estadisticas={estadisticas} 
               monedaActual={monedaActual} 
             />
-          </div>
+          </section>
         )}
 
-        {/* Gráficos */}
-        <div className="mb-4 sm:mb-6">
+        {/* Sección: Gráficos */}
+        <section className="mb-8 sm:mb-10">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">📈 Visualización</h2>
+            <p className="text-sm text-gray-600">Gráficos y análisis de tus gastos</p>
+          </div>
           <GastosChart estadisticas={estadisticas} moneda={monedaActual} />
-        </div>
+        </section>
 
-        {/* Contenido principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Formulario */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
-            <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
+        {/* Sección: Gestión de Gastos */}
+        <section className="mb-8 sm:mb-10">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">💰 Gestión de Gastos</h2>
+            <p className="text-sm text-gray-600">Agrega y gestiona tus gastos</p>
           </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            {/* Formulario */}
+            <div className="lg:col-span-1 order-2 lg:order-1">
+              <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
+            </div>
 
-          {/* Lista de gastos */}
-          <div className="lg:col-span-2 order-1 lg:order-2">
-            <GastoList 
-              gastos={gastos} 
-              onEliminarGasto={eliminarGasto} 
-              onEditarGasto={editarGasto}
-              moneda={monedaActual} 
-            />
+            {/* Lista de gastos */}
+            <div className="lg:col-span-2 order-1 lg:order-2">
+              <GastoList 
+                gastos={gastos} 
+                onEliminarGasto={eliminarGasto} 
+                onEditarGasto={editarGasto}
+                moneda={monedaActual} 
+              />
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
