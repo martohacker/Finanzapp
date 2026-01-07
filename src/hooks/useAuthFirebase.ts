@@ -68,8 +68,25 @@ export function useAuthFirebase() {
       return;
     }
 
+    let timeoutId: NodeJS.Timeout;
+    let hasResolved = false;
+
+    // Timeout de seguridad: si después de 5 segundos no hay respuesta, dejar de cargar
+    timeoutId = setTimeout(() => {
+      if (!hasResolved) {
+        console.warn('⚠️ Timeout esperando autenticación de Firebase. Continuando sin autenticación.');
+        setCargando(false);
+        hasResolved = true;
+      }
+    }, 5000);
+
     // Escuchar cambios de sesión en Firebase
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (hasResolved) return; // Evitar múltiples llamadas
+      
+      clearTimeout(timeoutId);
+      hasResolved = true;
+      
       if (user) {
         setFirebaseUser(user);
         
@@ -87,22 +104,29 @@ export function useAuthFirebase() {
       setCargando(false);
     });
 
-    // Verificar sesión actual (similar a Supabase)
-    // onAuthStateChanged ya debería dispararse inmediatamente, pero esto asegura consistencia
+    // Verificar sesión actual inmediatamente (similar a Supabase)
+    // Esto puede ejecutarse antes que onAuthStateChanged
     if (auth.currentUser) {
-      const user = auth.currentUser;
-      setFirebaseUser(user);
-      const usuario: Usuario = {
-        id: user.uid,
-        email: user.email || '',
-        nombre: user.displayName || user.email?.split('@')[0] || 'Usuario',
-        fechaCreacion: user.metadata.creationTime || new Date().toISOString(),
-      };
-      setUsuarioActual(usuario);
-      setCargando(false);
+      clearTimeout(timeoutId);
+      if (!hasResolved) {
+        hasResolved = true;
+        const user = auth.currentUser;
+        setFirebaseUser(user);
+        const usuario: Usuario = {
+          id: user.uid,
+          email: user.email || '',
+          nombre: user.displayName || user.email?.split('@')[0] || 'Usuario',
+          fechaCreacion: user.metadata.creationTime || new Date().toISOString(),
+        };
+        setUsuarioActual(usuario);
+        setCargando(false);
+      }
     }
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   // Funciones fallback para localStorage
