@@ -87,8 +87,95 @@ export function useAuthFirebase() {
       setCargando(false);
     });
 
+    // Verificar sesión actual (similar a Supabase)
+    // onAuthStateChanged ya debería dispararse inmediatamente, pero esto asegura consistencia
+    if (auth.currentUser) {
+      const user = auth.currentUser;
+      setFirebaseUser(user);
+      const usuario: Usuario = {
+        id: user.uid,
+        email: user.email || '',
+        nombre: user.displayName || user.email?.split('@')[0] || 'Usuario',
+        fechaCreacion: user.metadata.creationTime || new Date().toISOString(),
+      };
+      setUsuarioActual(usuario);
+      setCargando(false);
+    }
+
     return () => unsubscribe();
   }, []);
+
+  // Funciones fallback para localStorage
+  async function registrarLocal(
+    email: string,
+    password: string,
+    nombre: string
+  ): Promise<{ exito: boolean; error?: string }> {
+    const usuarios = obtenerUsuariosLocal();
+
+    if (usuarios.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { exito: false, error: 'Este email ya está registrado' };
+    }
+
+    if (!email || !email.includes('@')) {
+      return { exito: false, error: 'Email inválido' };
+    }
+
+    if (!password || password.length < 4) {
+      return { exito: false, error: 'La contraseña debe tener al menos 4 caracteres' };
+    }
+
+    if (!nombre || nombre.trim().length < 2) {
+      return { exito: false, error: 'El nombre debe tener al menos 2 caracteres' };
+    }
+
+    try {
+      const passwordHash = await hashPassword(password);
+      const nuevoUsuario: Usuario = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        email: email.toLowerCase(),
+        nombre: nombre.trim(),
+        fechaCreacion: new Date().toISOString(),
+      };
+
+      usuarios.push(nuevoUsuario);
+      guardarUsuariosLocal(usuarios);
+      localStorage.setItem(`finanzapp-pwd-${nuevoUsuario.id}`, passwordHash);
+      localStorage.setItem(STORAGE_SESION, nuevoUsuario.id);
+
+      setUsuarioActual(nuevoUsuario);
+      return { exito: true };
+    } catch (error) {
+      return { exito: false, error: 'Error al registrar usuario' };
+    }
+  }
+
+  async function loginLocal(
+    email: string,
+    password: string
+  ): Promise<{ exito: boolean; error?: string }> {
+    const usuarios = obtenerUsuariosLocal();
+    const usuario = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!usuario) {
+      return { exito: false, error: 'Email o contraseña incorrectos' };
+    }
+
+    try {
+      const passwordHash = await hashPassword(password);
+      const storedHash = localStorage.getItem(`finanzapp-pwd-${usuario.id}`);
+
+      if (storedHash && storedHash === passwordHash) {
+        setUsuarioActual(usuario);
+        localStorage.setItem(STORAGE_SESION, usuario.id);
+        return { exito: true };
+      } else {
+        return { exito: false, error: 'Email o contraseña incorrectos' };
+      }
+    } catch (error) {
+      return { exito: false, error: 'Error al iniciar sesión' };
+    }
+  }
 
   const registrar = async (
     email: string,
@@ -199,78 +286,6 @@ export function useAuthFirebase() {
       localStorage.removeItem(STORAGE_SESION);
     }
   };
-
-  // Funciones fallback para localStorage
-  async function registrarLocal(
-    email: string,
-    password: string,
-    nombre: string
-  ): Promise<{ exito: boolean; error?: string }> {
-    const usuarios = obtenerUsuariosLocal();
-
-    if (usuarios.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-      return { exito: false, error: 'Este email ya está registrado' };
-    }
-
-    if (!email || !email.includes('@')) {
-      return { exito: false, error: 'Email inválido' };
-    }
-
-    if (!password || password.length < 4) {
-      return { exito: false, error: 'La contraseña debe tener al menos 4 caracteres' };
-    }
-
-    if (!nombre || nombre.trim().length < 2) {
-      return { exito: false, error: 'El nombre debe tener al menos 2 caracteres' };
-    }
-
-    try {
-      const passwordHash = await hashPassword(password);
-      const nuevoUsuario: Usuario = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        email: email.toLowerCase(),
-        nombre: nombre.trim(),
-        fechaCreacion: new Date().toISOString(),
-      };
-
-      usuarios.push(nuevoUsuario);
-      guardarUsuariosLocal(usuarios);
-      localStorage.setItem(`finanzapp-pwd-${nuevoUsuario.id}`, passwordHash);
-      localStorage.setItem(STORAGE_SESION, nuevoUsuario.id);
-
-      setUsuarioActual(nuevoUsuario);
-      return { exito: true };
-    } catch (error) {
-      return { exito: false, error: 'Error al registrar usuario' };
-    }
-  }
-
-  async function loginLocal(
-    email: string,
-    password: string
-  ): Promise<{ exito: boolean; error?: string }> {
-    const usuarios = obtenerUsuariosLocal();
-    const usuario = usuarios.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!usuario) {
-      return { exito: false, error: 'Email o contraseña incorrectos' };
-    }
-
-    try {
-      const passwordHash = await hashPassword(password);
-      const storedHash = localStorage.getItem(`finanzapp-pwd-${usuario.id}`);
-
-      if (storedHash && storedHash === passwordHash) {
-        setUsuarioActual(usuario);
-        localStorage.setItem(STORAGE_SESION, usuario.id);
-        return { exito: true };
-      } else {
-        return { exito: false, error: 'Email o contraseña incorrectos' };
-      }
-    } catch (error) {
-      return { exito: false, error: 'Error al iniciar sesión' };
-    }
-  }
 
   return {
     usuarioActual,
