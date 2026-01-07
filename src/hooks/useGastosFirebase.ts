@@ -393,12 +393,25 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
         // Si es un error de permisos, mostrar ayuda detallada
         if (error?.code === 'permission-denied') {
           console.error('🔴 ERROR: Permisos denegados al escribir en Firestore.');
-          console.error('📋 Verifica en Firebase Console:');
-          console.error('   1. Firestore Database → Rules');
-          console.error('   2. Las reglas deben permitir create con:');
-          console.error('      allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;');
-          console.error('   3. Verifica que el usuario esté autenticado: userId =', userId);
-          console.error('   4. Verifica que el user_id en el documento coincida con el usuario autenticado');
+          console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Rules');
+          console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
+          console.error(`
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gastos/{gastoId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.user_id;
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.user_id;
+    }
+  }
+}`);
+          console.error('📋 Luego haz clic en "Publish"');
+          console.error('📋 Verifica que el usuario esté autenticado: userId =', userId);
+          console.error('📋 auth.currentUser.uid =', auth?.currentUser?.uid);
         }
         
         // Si es un error 400, puede ser un problema de reglas o dominio
@@ -409,7 +422,11 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           console.error('   2. Dominio no autorizado en Firebase Authentication');
           console.error('   3. Usuario no autenticado correctamente');
           console.error('   4. Verifica en Firebase Console → Authentication → Settings → Authorized domains');
+          console.error('   5. Agrega tu dominio: martohacker.github.io');
         }
+        
+        // Mostrar alerta visual al usuario
+        alert(`❌ Error al guardar en Firebase: ${error?.code || error?.message || 'Error desconocido'}\n\nRevisa la consola para más detalles.`);
         
         guardarEnLocalStorage();
       }
@@ -444,11 +461,28 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     };
     
+    console.log('➕ Agregando nuevo gasto:', nuevoGasto);
+    console.log('🔍 Estado actual:', {
+      usandoFirebase,
+      isFirebaseConfigured: isFirebaseConfigured(),
+      tieneDb: !!db,
+      tieneAuth: !!auth,
+      tieneUserId: !!userId,
+      userIdActual: userId,
+      authUserId: auth?.currentUser?.uid,
+    });
+    
     // Agregar primero al estado para respuesta inmediata
     setGastos([nuevoGasto, ...gastos]);
     
     // Guardar en Firebase/localStorage
-    await guardarGasto(nuevoGasto, true);
+    try {
+      await guardarGasto(nuevoGasto, true);
+      console.log('✅ Gasto agregado y guardado correctamente');
+    } catch (error) {
+      console.error('❌ Error al agregar gasto:', error);
+      // El error ya se maneja en guardarGasto, pero mostramos confirmación
+    }
     
     // Si se guardó en Firebase, recargar para obtener el ID real
     if (usandoFirebase && isFirebaseConfigured() && db && userId) {
