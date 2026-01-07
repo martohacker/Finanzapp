@@ -25,22 +25,41 @@ async function sincronizarGastosEnSegundoPlano(
 ): Promise<void> {
   if (!isFirebaseConfigured() || !db || !auth?.currentUser) {
     console.warn('💡 No se puede sincronizar: Firebase no está configurado o usuario no autenticado.');
+    console.warn('Estado:', {
+      isFirebaseConfigured: isFirebaseConfigured(),
+      tieneDb: !!db,
+      tieneAuth: !!auth,
+      currentUser: auth?.currentUser?.uid,
+      userId: userId,
+    });
     return;
   }
 
-  // Timeout de seguridad: máximo 10 segundos para sincronizar
+  // Verificar que el usuario esté autenticado correctamente
+  if (auth.currentUser.uid !== userId) {
+    console.error('🔴 ERROR: El userId no coincide con el usuario autenticado');
+    console.error('   userId proporcionado:', userId);
+    console.error('   auth.currentUser.uid:', auth.currentUser.uid);
+    return;
+  }
+
+  // Timeout de seguridad: máximo 15 segundos para sincronizar (aumentado)
   const timeoutPromise = new Promise<void>((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronización')), 10000);
+    setTimeout(() => reject(new Error('Timeout de sincronización')), 15000);
   });
 
   const syncPromise = (async () => {
     try {
+      console.log('🔄 Iniciando sincronización de', gastosLocal.length, 'gastos...');
       const gastosRef = collection(db, 'gastos');
       let sincronizados = 0;
       const errores: any[] = [];
       
-      for (const gastoLocal of gastosLocal) {
+      for (let i = 0; i < gastosLocal.length; i++) {
+        const gastoLocal = gastosLocal[i];
         try {
+          console.log(`🔄 Sincronizando gasto ${i + 1}/${gastosLocal.length}:`, gastoLocal.descripcion);
+          
           // Verificar si el gasto ya existe en Firebase
           const q = query(
             gastosRef,
@@ -53,6 +72,7 @@ async function sincronizarGastosEnSegundoPlano(
           
           if (existingDocs.empty) {
             // No existe, crear nuevo
+            console.log('💾 Creando nuevo gasto en Firebase...');
             await addDoc(gastosRef, {
               user_id: userId,
               descripcion: gastoLocal.descripcion,
@@ -64,20 +84,40 @@ async function sincronizarGastosEnSegundoPlano(
               updated_at: Timestamp.now(),
             });
             sincronizados++;
+            console.log(`✅ Gasto ${i + 1} sincronizado correctamente`);
+          } else {
+            console.log(`ℹ️ Gasto ${i + 1} ya existe en Firebase, omitiendo`);
           }
         } catch (syncError: any) {
           errores.push(syncError);
-          console.warn('⚠️ Error al sincronizar un gasto:', syncError);
+          console.error(`❌ Error al sincronizar gasto ${i + 1}:`, syncError);
           
           // Mostrar detalles específicos del error
           if (syncError?.code === 'permission-denied') {
             console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
-            console.error('📋 Solución: Ve a Firebase Console → Firestore Database → Rules');
-            console.error('📋 Asegúrate de que las reglas permitan create con:');
-            console.error('   allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;');
+            console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Rules');
+            console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
+            console.error(`
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gastos/{gastoId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.user_id;
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.user_id;
+    }
+  }
+}`);
+            console.error('📋 Luego haz clic en "Publish"');
+            // No continuar si es error de permisos
+            throw syncError;
           } else if (syncError?.code === 'unauthenticated') {
             console.error('🔴 USUARIO NO AUTENTICADO: El usuario no está autenticado correctamente.');
             console.error('📋 Verifica que el usuario haya iniciado sesión.');
+            throw syncError;
           } else if (syncError?.code === 'invalid-argument') {
             console.error('🔴 ARGUMENTO INVÁLIDO: Problema con los datos enviados.');
             console.error('📋 Verifica que todos los campos sean válidos.');
@@ -142,10 +182,21 @@ service cloud.firestore {
   // Ejecutar con timeout
   try {
     await Promise.race([syncPromise, timeoutPromise]);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Error && error.message === 'Timeout de sincronización') {
-      console.warn('⏱️ Timeout: La sincronización tardó demasiado. Continuando sin sincronizar.');
+      console.error('⏱️ TIMEOUT: La sincronización tardó demasiado (15 segundos).');
+      console.error('📋 Esto generalmente indica un problema de permisos o conexión.');
+      console.error('📋 Verifica:');
+      console.error('   1. Reglas de Firestore (Firebase Console → Firestore → Rules)');
+      console.error('   2. Dominio autorizado (Firebase Console → Authentication → Settings → Authorized domains)');
+      console.error('   3. Usuario autenticado (deberías ver tu usuario en Authentication → Users)');
+      console.error('📋 Si el problema persiste, los gastos se guardarán solo en localStorage.');
+    } else if (error?.code === 'permission-denied') {
+      console.error('🔴 PERMISOS DENEGADOS detectados durante sincronización');
+      console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
+      console.error('📋 Las reglas actuales están bloqueando la escritura.');
     } else {
+      console.error('❌ Error en sincronización:', error);
       throw error;
     }
   }
