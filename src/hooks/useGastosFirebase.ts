@@ -18,6 +18,90 @@ import { CATEGORIAS } from '../constants/categorias';
 const obtenerStorageKey = (userId: string | null) => 
   userId ? `finanzapp-gastos-${userId}` : 'finanzapp-gastos-temp';
 
+// Función para sincronizar gastos en segundo plano sin bloquear la UI
+async function sincronizarGastosEnSegundoPlano(
+  gastosLocal: Gasto[], 
+  userId: string, 
+  storageKey: string
+): Promise<void> {
+  if (!isFirebaseConfigured() || !db || !auth?.currentUser) {
+    console.warn('💡 No se puede sincronizar: Firebase no está configurado o usuario no autenticado.');
+    return;
+  }
+
+  // Timeout de seguridad: máximo 10 segundos para sincronizar
+  const timeoutPromise = new Promise<void>((_, reject) => {
+    setTimeout(() => reject(new Error('Timeout de sincronización')), 10000);
+  });
+
+  const syncPromise = (async () => {
+    try {
+      const gastosRef = collection(db, 'gastos');
+      let sincronizados = 0;
+      const errores: any[] = [];
+      
+      for (const gastoLocal of gastosLocal) {
+        try {
+          // Verificar si el gasto ya existe en Firebase
+          const q = query(
+            gastosRef,
+            where('user_id', '==', userId),
+            where('descripcion', '==', gastoLocal.descripcion),
+            where('fecha', '==', gastoLocal.fecha),
+            where('monto', '==', gastoLocal.monto)
+          );
+          const existingDocs = await getDocs(q);
+          
+          if (existingDocs.empty) {
+            // No existe, crear nuevo
+            await addDoc(gastosRef, {
+              user_id: userId,
+              descripcion: gastoLocal.descripcion,
+              monto: gastoLocal.monto,
+              categoria: gastoLocal.categoria,
+              fecha: gastoLocal.fecha,
+              moneda: gastoLocal.moneda || 'ARS',
+              created_at: Timestamp.now(),
+              updated_at: Timestamp.now(),
+            });
+            sincronizados++;
+          }
+        } catch (syncError) {
+          errores.push(syncError);
+          console.warn('⚠️ Error al sincronizar un gasto:', syncError);
+        }
+      }
+      
+      if (sincronizados > 0) {
+        console.log(`✅ Sincronizados ${sincronizados} gastos con Firebase.`);
+        // Recargar la página después de un breve delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else if (errores.length > 0) {
+        console.warn('⚠️ No se pudieron sincronizar los gastos. Verifica las reglas de seguridad.');
+        console.warn('Errores:', errores);
+      } else {
+        console.log('ℹ️ Todos los gastos ya estaban sincronizados.');
+      }
+    } catch (syncError) {
+      console.error('❌ Error al sincronizar gastos:', syncError);
+      throw syncError;
+    }
+  })();
+
+  // Ejecutar con timeout
+  try {
+    await Promise.race([syncPromise, timeoutPromise]);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Timeout de sincronización') {
+      console.warn('⏱️ Timeout: La sincronización tardó demasiado. Continuando sin sincronizar.');
+    } else {
+      throw error;
+    }
+  }
+}
+
 export function useGastosFirebase(userId: string | null, usandoFirebase: boolean) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -84,79 +168,32 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
 
           console.log(`✅ Cargados ${gastosConvertidos.length} gastos desde Firebase`);
           
-          // Verificar si hay gastos en localStorage que no están en Firebase
+          setGastos(gastosConvertidos);
+          
+          // Guardar también en localStorage como backup
           const storageKey = obtenerStorageKey(userId);
+          if (gastosConvertidos.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
+          }
+          
+          // Sincronizar gastos locales en segundo plano (no bloquea la carga)
+          // Solo si no hay gastos en Firebase pero sí en localStorage
           const storedLocal = localStorage.getItem(storageKey);
           if (storedLocal && gastosConvertidos.length === 0) {
             try {
               const gastosLocal: Gasto[] = JSON.parse(storedLocal);
               if (gastosLocal && gastosLocal.length > 0) {
                 console.warn(`⚠️ Hay ${gastosLocal.length} gastos en localStorage pero 0 en Firebase.`);
-                console.warn('💡 Intentando sincronizar gastos locales con Firebase...');
+                console.warn('💡 Sincronizando en segundo plano...');
                 
-                // Intentar sincronizar los gastos locales con Firebase
-                if (usandoFirebase && isFirebaseConfigured() && db && auth?.currentUser) {
-                  try {
-                    const gastosRef = collection(db, 'gastos');
-                    let sincronizados = 0;
-                    
-                    for (const gastoLocal of gastosLocal) {
-                      try {
-                        // Verificar si el gasto ya existe en Firebase (por ID)
-                        const q = query(
-                          gastosRef,
-                          where('user_id', '==', userId),
-                          where('descripcion', '==', gastoLocal.descripcion),
-                          where('fecha', '==', gastoLocal.fecha),
-                          where('monto', '==', gastoLocal.monto)
-                        );
-                        const existingDocs = await getDocs(q);
-                        
-                        if (existingDocs.empty) {
-                          // No existe, crear nuevo
-                          await addDoc(gastosRef, {
-                            user_id: userId,
-                            descripcion: gastoLocal.descripcion,
-                            monto: gastoLocal.monto,
-                            categoria: gastoLocal.categoria,
-                            fecha: gastoLocal.fecha,
-                            moneda: gastoLocal.moneda || 'ARS',
-                            created_at: Timestamp.now(),
-                            updated_at: Timestamp.now(),
-                          });
-                          sincronizados++;
-                        }
-                      } catch (syncError) {
-                        console.warn('⚠️ Error al sincronizar un gasto:', syncError);
-                      }
-                    }
-                    
-                    if (sincronizados > 0) {
-                      console.log(`✅ Sincronizados ${sincronizados} gastos con Firebase. Recargando...`);
-                      // Recargar gastos después de sincronizar
-                      setTimeout(() => {
-                        window.location.reload();
-                      }, 1000);
-                    } else {
-                      console.warn('⚠️ No se pudieron sincronizar los gastos. Verifica las reglas de seguridad.');
-                    }
-                  } catch (syncError) {
-                    console.error('❌ Error al sincronizar gastos:', syncError);
-                  }
-                } else {
-                  console.warn('💡 No se puede sincronizar: Firebase no está configurado o usuario no autenticado.');
-                }
+                // Ejecutar sincronización en segundo plano sin bloquear
+                sincronizarGastosEnSegundoPlano(gastosLocal, userId, storageKey).catch(err => {
+                  console.error('❌ Error en sincronización en segundo plano:', err);
+                });
               }
             } catch (e) {
               // Ignorar errores de parsing
             }
-          }
-          
-          setGastos(gastosConvertidos);
-          
-          // Guardar también en localStorage como backup
-          if (gastosConvertidos.length > 0) {
-            localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
           }
         } catch (error: any) {
           console.error('❌ Error al cargar desde Firebase:', error);
