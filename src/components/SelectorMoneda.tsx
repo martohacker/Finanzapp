@@ -7,17 +7,19 @@ interface SelectorMonedaProps {
 }
 
 export function SelectorMoneda({ monedaActual, onCambiarMoneda }: SelectorMonedaProps) {
+  const monedaSeleccionada = MONEDAS.find(m => m.codigo === monedaActual);
+  
   return (
-    <div className="flex items-center gap-2 w-full sm:w-auto">
-      <Coins className="text-gray-600 hidden sm:block" size={20} />
+    <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+      <Coins className="text-gray-600 hidden sm:block flex-shrink-0" size={18} />
       <select
         value={monedaActual}
         onChange={(e) => onCambiarMoneda(e.target.value)}
-        className="w-full sm:w-auto px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white text-xs sm:text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
       >
         {MONEDAS.map(moneda => (
           <option key={moneda.codigo} value={moneda.codigo}>
-            {moneda.simbolo} {moneda.codigo} - {moneda.nombre}
+            {moneda.simbolo} {moneda.codigo}
           </option>
         ))}
       </select>

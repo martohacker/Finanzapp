@@ -46,22 +46,22 @@ export function Estadisticas({ estadisticas, moneda }: EstadisticasProps) {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {cards.map((card, index) => {
           const Icono = card.icono;
           return (
             <div
               key={index}
-              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-lg shadow-md p-3 sm:p-4 md:p-6 hover:shadow-lg active:shadow-md transition-shadow touch-manipulation"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">{card.titulo}</p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 truncate">{card.valor}</p>
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 truncate">{card.valor}</p>
                 </div>
-                <div className={`${card.color} p-2 sm:p-3 rounded-full flex-shrink-0 ml-2`}>
-                  <Icono className="text-white" size={20} />
+                <div className={`${card.color} p-1.5 sm:p-2 md:p-3 rounded-full flex-shrink-0`}>
+                  <Icono className="text-white" size={16} />
                 </div>
               </div>
             </div>

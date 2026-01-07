@@ -39,8 +39,8 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Agregar Gasto</h2>
+    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-3 sm:space-y-4">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Agregar Gasto</h2>
       
       <div>
         <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">
@@ -130,7 +130,7 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
 
       <button
         type="submit"
-        className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+        className="w-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold py-3 sm:py-3.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-base sm:text-lg touch-manipulation shadow-md hover:shadow-lg"
       >
         <Plus size={20} />
         Agregar Gasto

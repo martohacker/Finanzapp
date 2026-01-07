@@ -40,32 +40,32 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <header className="mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary-600 p-2 sm:p-3 rounded-lg">
-                <Wallet className="text-white" size={24} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20 sm:pb-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Header - Sticky en móvil */}
+        <header className="mb-4 sm:mb-8 sticky top-0 z-10 bg-gradient-to-br from-gray-50 to-gray-100 pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="bg-primary-600 p-2 sm:p-3 rounded-lg flex-shrink-0">
+                <Wallet className="text-white" size={20} />
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">FinanzApp</h1>
-                <p className="text-sm sm:text-base text-gray-600">Control total de tus finanzas personales</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 truncate">FinanzApp</h1>
+                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Control total de tus finanzas personales</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm">
-                <User size={18} className="text-primary-600" />
-                <span className="text-sm font-medium text-gray-700">{usuarioActual.nombre}</span>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-sm text-xs sm:text-sm">
+                <User size={16} className="text-primary-600 flex-shrink-0" />
+                <span className="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">{usuarioActual.nombre}</span>
               </div>
               <SelectorMoneda monedaActual={moneda} onCambiarMoneda={cambiarMoneda} />
               <button
                 onClick={cerrarSesion}
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation"
                 title="Cerrar sesión"
               >
-                <LogOut size={18} />
+                <LogOut size={16} />
                 <span className="hidden sm:inline">Salir</span>
               </button>
             </div>
@@ -85,13 +85,13 @@ function App() {
         )}
 
         {/* Estadísticas */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-6">
           <Estadisticas estadisticas={estadisticas} moneda={monedaActual} />
         </div>
 
         {/* Conversión a Pesos Argentinos (si la moneda no es ARS) */}
         {monedaActual.codigo !== 'ARS' && (
-          <div className="mb-8">
+          <div className="mb-4 sm:mb-6">
             <ResumenConversion 
               estadisticas={estadisticas} 
               monedaActual={monedaActual} 
@@ -100,19 +100,19 @@ function App() {
         )}
 
         {/* Gráficos */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-6">
           <GastosChart estadisticas={estadisticas} moneda={monedaActual} />
         </div>
 
         {/* Contenido principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Formulario */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 order-2 lg:order-1">
             <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
           </div>
 
           {/* Lista de gastos */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-1 lg:order-2">
             <GastoList 
               gastos={gastos} 
               onEliminarGasto={eliminarGasto} 

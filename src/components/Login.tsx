@@ -39,8 +39,8 @@ export function Login({ onLogin, onRegistrar }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-primary-100 to-primary-200 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-primary-100 to-primary-200 flex items-center justify-center p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8">
         <div className="text-center mb-8">
           <div className="inline-block bg-primary-600 p-4 rounded-full mb-4">
             {esRegistro ? (
@@ -129,7 +129,7 @@ export function Login({ onLogin, onRegistrar }: LoginProps) {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold py-3.5 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation shadow-md hover:shadow-lg text-base sm:text-lg"
           >
             {cargando ? 'Procesando...' : (esRegistro ? 'Crear Cuenta' : 'Iniciar Sesión')}
           </button>

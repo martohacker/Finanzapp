@@ -45,8 +45,8 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Gastos Recientes</h2>
-      <div className="space-y-3">
+      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Gastos Recientes</h2>
+      <div className="space-y-2 sm:space-y-3">
         {gastos.map(gasto => {
           const categoria = obtenerCategoria(gasto.categoria);
           const monedaGasto = obtenerMonedaGasto(gasto.moneda);
@@ -55,7 +55,7 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
           return (
             <div
               key={gasto.id}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
             >
               {/* Icono de categoría */}
               <div
@@ -67,25 +67,27 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
 
               {/* Contenido principal */}
               <div className="flex-1 min-w-0 w-full sm:w-auto">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <p className="font-semibold text-gray-800 truncate">{gasto.descripcion}</p>
-                  <span
-                    className="text-xs px-2 py-1 rounded-full text-white whitespace-nowrap flex-shrink-0"
-                    style={{ backgroundColor: categoria.color }}
-                  >
-                    {categoria.nombre}
-                  </span>
-                  {gasto.moneda && gasto.moneda !== moneda.codigo && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap flex-shrink-0">
-                      {monedaGasto.simbolo} {gasto.moneda}
+                <div className="flex items-start sm:items-center gap-2 flex-wrap mb-1">
+                  <p className="font-semibold text-sm sm:text-base text-gray-800 flex-1 min-w-0 break-words">{gasto.descripcion}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className="text-xs px-2 py-0.5 sm:py-1 rounded-full text-white whitespace-nowrap flex-shrink-0"
+                      style={{ backgroundColor: categoria.color }}
+                    >
+                      {categoria.nombre}
                     </span>
-                  )}
+                    {gasto.moneda && gasto.moneda !== moneda.codigo && (
+                      <span className="text-xs px-2 py-0.5 sm:py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap flex-shrink-0">
+                        {monedaGasto.simbolo} {gasto.moneda}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">{formatearFecha(gasto.fecha)}</p>
+                <p className="text-xs sm:text-sm text-gray-500">{formatearFecha(gasto.fecha)}</p>
                 
                 {/* Conversión en móvil */}
                 {mostrarConversion && (
-                  <div className="sm:hidden mt-2">
+                  <div className="sm:hidden mt-1.5">
                     <ConversionPesos 
                       monto={gasto.monto} 
                       monedaOrigen={monedaGasto} 
@@ -95,8 +97,8 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
               </div>
 
               {/* Monto y acciones */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
-                <div className="text-left sm:text-right">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-2 sm:pt-0">
+                <div className="text-left sm:text-right flex-1 sm:flex-none">
                   <p className="font-bold text-base sm:text-lg text-gray-900 whitespace-nowrap">
                     {formatearMonto(gasto.monto, monedaGasto)}
                   </p>
@@ -112,14 +114,14 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setGastoEditando(gasto)}
-                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2 sm:p-2.5 text-blue-500 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors touch-manipulation"
                     title="Editar gasto"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button
                     onClick={() => onEliminarGasto(gasto.id)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 sm:p-2.5 text-red-500 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors touch-manipulation"
                     title="Eliminar gasto"
                   >
                     <Trash2 size={18} />
