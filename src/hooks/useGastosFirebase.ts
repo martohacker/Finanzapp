@@ -43,61 +43,82 @@ async function sincronizarGastosEnSegundoPlano(
     return;
   }
 
-  // Timeout de seguridad: máximo 15 segundos para sincronizar (aumentado)
-  const timeoutPromise = new Promise<void>((_, reject) => {
-    setTimeout(() => reject(new Error('Timeout de sincronización')), 15000);
-  });
-
-  const syncPromise = (async () => {
-    try {
-      console.log('🔄 Iniciando sincronización de', gastosLocal.length, 'gastos...');
-      const gastosRef = collection(db, 'gastos');
-      let sincronizados = 0;
-      const errores: any[] = [];
+  // Intentar sincronizar SIN timeout primero para capturar el error real
+  try {
+    console.log('🔄 Iniciando sincronización de', gastosLocal.length, 'gastos...');
+    console.log('🔍 Verificando autenticación:', {
+      userId: userId,
+      authUserId: auth.currentUser?.uid,
+      coincide: auth.currentUser?.uid === userId,
+    });
+    
+    const gastosRef = collection(db, 'gastos');
+    let sincronizados = 0;
+    const errores: any[] = [];
+    
+    // Intentar sincronizar el primer gasto para detectar errores inmediatamente
+    if (gastosLocal.length > 0) {
+      const primerGasto = gastosLocal[0];
+      console.log('🧪 Prueba de escritura con el primer gasto:', primerGasto.descripcion);
       
-      for (let i = 0; i < gastosLocal.length; i++) {
-        const gastoLocal = gastosLocal[i];
-        try {
-          console.log(`🔄 Sincronizando gasto ${i + 1}/${gastosLocal.length}:`, gastoLocal.descripcion);
-          
-          // Verificar si el gasto ya existe en Firebase
-          const q = query(
-            gastosRef,
-            where('user_id', '==', userId),
-            where('descripcion', '==', gastoLocal.descripcion),
-            where('fecha', '==', gastoLocal.fecha),
-            where('monto', '==', gastoLocal.monto)
-          );
-          const existingDocs = await getDocs(q);
-          
-          if (existingDocs.empty) {
-            // No existe, crear nuevo
-            console.log('💾 Creando nuevo gasto en Firebase...');
-            await addDoc(gastosRef, {
-              user_id: userId,
-              descripcion: gastoLocal.descripcion,
-              monto: gastoLocal.monto,
-              categoria: gastoLocal.categoria,
-              fecha: gastoLocal.fecha,
-              moneda: gastoLocal.moneda || 'ARS',
-              created_at: Timestamp.now(),
-              updated_at: Timestamp.now(),
-            });
-            sincronizados++;
-            console.log(`✅ Gasto ${i + 1} sincronizado correctamente`);
-          } else {
-            console.log(`ℹ️ Gasto ${i + 1} ya existe en Firebase, omitiendo`);
+      try {
+        // Intentar crear directamente sin verificar existencia primero
+        console.log('💾 Intentando crear gasto en Firebase...');
+        const docRef = await addDoc(gastosRef, {
+          user_id: userId,
+          descripcion: primerGasto.descripcion,
+          monto: primerGasto.monto,
+          categoria: primerGasto.categoria,
+          fecha: primerGasto.fecha,
+          moneda: primerGasto.moneda || 'ARS',
+          created_at: Timestamp.now(),
+          updated_at: Timestamp.now(),
+        });
+        console.log('✅ PRIMER GASTO CREADO EXITOSAMENTE con ID:', docRef.id);
+        sincronizados++;
+        
+        // Si el primer gasto funcionó, continuar con el resto
+        for (let i = 1; i < gastosLocal.length; i++) {
+          const gastoLocal = gastosLocal[i];
+          try {
+            // Verificar si el gasto ya existe
+            const q = query(
+              gastosRef,
+              where('user_id', '==', userId),
+              where('descripcion', '==', gastoLocal.descripcion),
+              where('fecha', '==', gastoLocal.fecha),
+              where('monto', '==', gastoLocal.monto)
+            );
+            const existingDocs = await getDocs(q);
+            
+            if (existingDocs.empty) {
+              await addDoc(gastosRef, {
+                user_id: userId,
+                descripcion: gastoLocal.descripcion,
+                monto: gastoLocal.monto,
+                categoria: gastoLocal.categoria,
+                fecha: gastoLocal.fecha,
+                moneda: gastoLocal.moneda || 'ARS',
+                created_at: Timestamp.now(),
+                updated_at: Timestamp.now(),
+              });
+              sincronizados++;
+            }
+          } catch (syncError: any) {
+            errores.push(syncError);
+            console.warn(`⚠️ Error al sincronizar gasto ${i + 1}:`, syncError);
           }
-        } catch (syncError: any) {
-          errores.push(syncError);
-          console.error(`❌ Error al sincronizar gasto ${i + 1}:`, syncError);
-          
-          // Mostrar detalles específicos del error
-          if (syncError?.code === 'permission-denied') {
-            console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
-            console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Rules');
-            console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
-            console.error(`
+        }
+      } catch (primerError: any) {
+        console.error('🔴 ERROR AL INTENTAR CREAR EL PRIMER GASTO:', primerError);
+        console.error('📋 Código de error:', primerError?.code);
+        console.error('📋 Mensaje:', primerError?.message);
+        
+        if (primerError?.code === 'permission-denied') {
+          console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
+          console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
+          console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
+          console.error(`
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -111,20 +132,22 @@ service cloud.firestore {
     }
   }
 }`);
-            console.error('📋 Luego haz clic en "Publish"');
-            // No continuar si es error de permisos
-            throw syncError;
-          } else if (syncError?.code === 'unauthenticated') {
-            console.error('🔴 USUARIO NO AUTENTICADO: El usuario no está autenticado correctamente.');
-            console.error('📋 Verifica que el usuario haya iniciado sesión.');
-            throw syncError;
-          } else if (syncError?.code === 'invalid-argument') {
-            console.error('🔴 ARGUMENTO INVÁLIDO: Problema con los datos enviados.');
-            console.error('📋 Verifica que todos los campos sean válidos.');
-          } else {
-            console.error('📋 Código de error:', syncError?.code);
-            console.error('📋 Mensaje:', syncError?.message);
-          }
+          console.error('📋 Luego haz clic en "Publish"');
+          console.error('📋 También verifica:');
+          console.error('   - Authentication → Settings → Authorized domains → agrega "martohacker.github.io"');
+          console.error('   - Authentication → Users → verifica que tu usuario esté listado');
+          
+          // Mostrar alerta visual
+          alert('❌ Error de permisos en Firebase\n\nLas reglas de Firestore están bloqueando la escritura.\n\nRevisa la consola para ver las instrucciones detalladas.');
+          return;
+        } else if (primerError?.code === 'unauthenticated') {
+          console.error('🔴 USUARIO NO AUTENTICADO');
+          console.error('📋 El usuario no está autenticado correctamente en Firebase');
+          alert('❌ Error de autenticación\n\nEl usuario no está autenticado correctamente.\n\nCierra sesión y vuelve a iniciar sesión.');
+          return;
+        } else {
+          console.error('📋 Error desconocido:', primerError);
+          errores.push(primerError);
         }
       }
       
@@ -173,31 +196,16 @@ service cloud.firestore {
       } else {
         console.log('ℹ️ Todos los gastos ya estaban sincronizados.');
       }
-    } catch (syncError) {
-      console.error('❌ Error al sincronizar gastos:', syncError);
-      throw syncError;
     }
-  })();
-
-  // Ejecutar con timeout
-  try {
-    await Promise.race([syncPromise, timeoutPromise]);
   } catch (error: any) {
-    if (error instanceof Error && error.message === 'Timeout de sincronización') {
-      console.error('⏱️ TIMEOUT: La sincronización tardó demasiado (15 segundos).');
-      console.error('📋 Esto generalmente indica un problema de permisos o conexión.');
-      console.error('📋 Verifica:');
-      console.error('   1. Reglas de Firestore (Firebase Console → Firestore → Rules)');
-      console.error('   2. Dominio autorizado (Firebase Console → Authentication → Settings → Authorized domains)');
-      console.error('   3. Usuario autenticado (deberías ver tu usuario en Authentication → Users)');
-      console.error('📋 Si el problema persiste, los gastos se guardarán solo en localStorage.');
-    } else if (error?.code === 'permission-denied') {
-      console.error('🔴 PERMISOS DENEGADOS detectados durante sincronización');
+    console.error('❌ Error crítico en sincronización:', error);
+    console.error('📋 Código:', error?.code);
+    console.error('📋 Mensaje:', error?.message);
+    
+    if (error?.code === 'permission-denied') {
+      console.error('🔴 PERMISOS DENEGADOS detectados');
       console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
-      console.error('📋 Las reglas actuales están bloqueando la escritura.');
-    } else {
-      console.error('❌ Error en sincronización:', error);
-      throw error;
+      alert('❌ Error de permisos en Firebase\n\nLas reglas de Firestore están bloqueando la escritura.\n\nRevisa la consola para ver las instrucciones detalladas.');
     }
   }
 }
