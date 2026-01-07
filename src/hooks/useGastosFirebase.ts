@@ -225,6 +225,9 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
             localStorage.setItem(storageKey, JSON.stringify(gastosConvertidos));
           }
           
+          // IMPORTANTE: Dejar de cargar ANTES de sincronizar
+          setCargando(false);
+          
           // Sincronizar gastos locales en segundo plano (no bloquea la carga)
           // Solo si no hay gastos en Firebase pero sí en localStorage
           const storedLocal = localStorage.getItem(storageKey);
@@ -233,7 +236,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
               const gastosLocal: Gasto[] = JSON.parse(storedLocal);
               if (gastosLocal && gastosLocal.length > 0) {
                 console.warn(`⚠️ Hay ${gastosLocal.length} gastos en localStorage pero 0 en Firebase.`);
-                console.warn('💡 Sincronizando en segundo plano...');
+                console.warn('💡 Sincronizando en segundo plano (no bloquea la UI)...');
                 
                 // Ejecutar sincronización en segundo plano sin bloquear
                 sincronizarGastosEnSegundoPlano(gastosLocal, userId).catch(err => {
@@ -263,6 +266,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           
           // Fallback a localStorage
           cargarDesdeLocalStorage();
+          setCargando(false);
         }
       } else {
         console.warn('⚠️ No se usa Firebase para cargar. Razones:', {
@@ -272,9 +276,8 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
         });
         // Cargar desde localStorage
         cargarDesdeLocalStorage();
+        setCargando(false);
       }
-      
-      setCargando(false);
     };
 
     const cargarDesdeLocalStorage = () => {
