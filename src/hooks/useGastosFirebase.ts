@@ -64,7 +64,20 @@ async function sincronizarGastosEnSegundoPlano(
       try {
         // Intentar crear directamente sin verificar existencia primero
         console.log('💾 Intentando crear gasto en Firebase...');
-        const docRef = await addDoc(gastosRef, {
+        console.log('📋 Datos a guardar:', {
+          user_id: userId,
+          descripcion: primerGasto.descripcion,
+          monto: primerGasto.monto,
+          categoria: primerGasto.categoria,
+          fecha: primerGasto.fecha,
+        });
+        
+        // Timeout de 5 segundos para la operación de escritura
+        const writeTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout de escritura: Las reglas de Firestore probablemente están bloqueando la operación')), 5000);
+        });
+        
+        const writePromise = addDoc(gastosRef, {
           user_id: userId,
           descripcion: primerGasto.descripcion,
           monto: primerGasto.monto,
@@ -74,6 +87,8 @@ async function sincronizarGastosEnSegundoPlano(
           created_at: Timestamp.now(),
           updated_at: Timestamp.now(),
         });
+        
+        const docRef = await Promise.race([writePromise, writeTimeout]) as any;
         console.log('✅ PRIMER GASTO CREADO EXITOSAMENTE con ID:', docRef.id);
         sincronizados++;
         
@@ -113,8 +128,10 @@ async function sincronizarGastosEnSegundoPlano(
         console.error('🔴 ERROR AL INTENTAR CREAR EL PRIMER GASTO:', primerError);
         console.error('📋 Código de error:', primerError?.code);
         console.error('📋 Mensaje:', primerError?.message);
+        console.error('📋 Stack:', primerError?.stack);
         
-        if (primerError?.code === 'permission-denied') {
+        // Si es timeout, es muy probable que sea un problema de permisos
+        if (primerError?.message?.includes('Timeout de escritura') || primerError?.code === 'permission-denied') {
           console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
           console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
           console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
