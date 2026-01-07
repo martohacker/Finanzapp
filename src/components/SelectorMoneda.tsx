@@ -7,8 +7,6 @@ interface SelectorMonedaProps {
 }
 
 export function SelectorMoneda({ monedaActual, onCambiarMoneda }: SelectorMonedaProps) {
-  const monedaSeleccionada = MONEDAS.find(m => m.codigo === monedaActual);
-  
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
       <Coins className="text-gray-600 hidden sm:block flex-shrink-0" size={18} />
