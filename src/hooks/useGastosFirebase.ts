@@ -21,8 +21,7 @@ const obtenerStorageKey = (userId: string | null) =>
 // Función para sincronizar gastos en segundo plano sin bloquear la UI
 async function sincronizarGastosEnSegundoPlano(
   gastosLocal: Gasto[], 
-  userId: string, 
-  storageKey: string
+  userId: string
 ): Promise<void> {
   if (!isFirebaseConfigured() || !db || !auth?.currentUser) {
     console.warn('💡 No se puede sincronizar: Firebase no está configurado o usuario no autenticado.');
@@ -66,9 +65,26 @@ async function sincronizarGastosEnSegundoPlano(
             });
             sincronizados++;
           }
-        } catch (syncError) {
+        } catch (syncError: any) {
           errores.push(syncError);
           console.warn('⚠️ Error al sincronizar un gasto:', syncError);
+          
+          // Mostrar detalles específicos del error
+          if (syncError?.code === 'permission-denied') {
+            console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
+            console.error('📋 Solución: Ve a Firebase Console → Firestore Database → Rules');
+            console.error('📋 Asegúrate de que las reglas permitan create con:');
+            console.error('   allow create: if request.auth != null && request.auth.uid == request.resource.data.user_id;');
+          } else if (syncError?.code === 'unauthenticated') {
+            console.error('🔴 USUARIO NO AUTENTICADO: El usuario no está autenticado correctamente.');
+            console.error('📋 Verifica que el usuario haya iniciado sesión.');
+          } else if (syncError?.code === 'invalid-argument') {
+            console.error('🔴 ARGUMENTO INVÁLIDO: Problema con los datos enviados.');
+            console.error('📋 Verifica que todos los campos sean válidos.');
+          } else {
+            console.error('📋 Código de error:', syncError?.code);
+            console.error('📋 Mensaje:', syncError?.message);
+          }
         }
       }
       
@@ -79,8 +95,41 @@ async function sincronizarGastosEnSegundoPlano(
           window.location.reload();
         }, 1500);
       } else if (errores.length > 0) {
-        console.warn('⚠️ No se pudieron sincronizar los gastos. Verifica las reglas de seguridad.');
-        console.warn('Errores:', errores);
+        console.error('❌ No se pudieron sincronizar los gastos.');
+        console.error('📊 Resumen de errores:');
+        
+        const permisosDenegados = errores.filter(e => e?.code === 'permission-denied').length;
+        const noAutenticado = errores.filter(e => e?.code === 'unauthenticated').length;
+        const otrosErrores = errores.filter(e => e?.code !== 'permission-denied' && e?.code !== 'unauthenticated').length;
+        
+        if (permisosDenegados > 0) {
+          console.error(`🔴 ${permisosDenegados} error(es) de permisos denegados`);
+          console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Rules');
+          console.error('📋 Copia y pega estas reglas:');
+          console.error(`
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gastos/{gastoId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.user_id;
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.user_id;
+    }
+  }
+}`);
+        }
+        
+        if (noAutenticado > 0) {
+          console.error(`🔴 ${noAutenticado} error(es) de usuario no autenticado`);
+          console.error('📋 SOLUCIÓN: Verifica que el usuario haya iniciado sesión correctamente.');
+        }
+        
+        if (otrosErrores > 0) {
+          console.error(`⚠️ ${otrosErrores} otro(s) error(es):`, errores.filter(e => e?.code !== 'permission-denied' && e?.code !== 'unauthenticated'));
+        }
       } else {
         console.log('ℹ️ Todos los gastos ya estaban sincronizados.');
       }
@@ -187,7 +236,7 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
                 console.warn('💡 Sincronizando en segundo plano...');
                 
                 // Ejecutar sincronización en segundo plano sin bloquear
-                sincronizarGastosEnSegundoPlano(gastosLocal, userId, storageKey).catch(err => {
+                sincronizarGastosEnSegundoPlano(gastosLocal, userId).catch(err => {
                   console.error('❌ Error en sincronización en segundo plano:', err);
                 });
               }
