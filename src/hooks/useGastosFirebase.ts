@@ -5,6 +5,7 @@ import {
   where, 
   orderBy, 
   getDocs, 
+  getDoc,
   addDoc, 
   updateDoc, 
   deleteDoc, 
@@ -72,7 +73,7 @@ async function sincronizarGastosEnSegundoPlano(
           fecha: primerGasto.fecha,
         });
         
-        // Timeout de 5 segundos para la operación de escritura
+        // Timeout de 5 segundos para detectar problemas de permisos rápidamente
         const writeTimeout = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Timeout de escritura: Las reglas de Firestore probablemente están bloqueando la operación')), 5000);
         });
@@ -445,18 +446,41 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           console.log('✅ Gasto guardado en Firebase con ID:', docRef.id);
           console.log('📋 Verifica en Firebase Console → Firestore → Data → gastos que el documento se haya creado correctamente.');
         } else {
-          // Actualizar gasto existente
-          console.log('💾 Actualizando gasto en Firebase:', gasto.id);
+          // Actualizar gasto existente - pero primero verificar si existe
+          console.log('💾 Intentando actualizar gasto en Firebase:', gasto.id);
+          
+          // Verificar si el documento existe en Firebase
           const gastoRef = doc(db, 'gastos', gasto.id);
-          await updateDoc(gastoRef, {
-            descripcion: gasto.descripcion,
-            monto: gasto.monto,
-            categoria: gasto.categoria,
-            fecha: gasto.fecha,
-            moneda: gasto.moneda || 'ARS', // Por defecto ARS
-            updated_at: Timestamp.now(),
-          });
-          console.log('✅ Gasto actualizado en Firebase');
+          const gastoDoc = await getDoc(gastoRef);
+          
+          if (gastoDoc.exists()) {
+            // El documento existe, actualizarlo
+            console.log('📋 El documento existe, actualizando...');
+            await updateDoc(gastoRef, {
+              descripcion: gasto.descripcion,
+              monto: gasto.monto,
+              categoria: gasto.categoria,
+              fecha: gasto.fecha,
+              moneda: gasto.moneda || 'ARS',
+              updated_at: Timestamp.now(),
+            });
+            console.log('✅ Gasto actualizado en Firebase');
+          } else {
+            // El documento no existe (probablemente es un ID local), crear uno nuevo
+            console.log('⚠️ El gasto no existe en Firebase (ID local detectado), creando uno nuevo...');
+            const docRef = await addDoc(gastosRef, {
+              user_id: userId,
+              descripcion: gasto.descripcion,
+              monto: gasto.monto,
+              categoria: gasto.categoria,
+              fecha: gasto.fecha,
+              moneda: gasto.moneda || 'ARS',
+              created_at: Timestamp.now(),
+              updated_at: Timestamp.now(),
+            });
+            console.log('✅ Gasto creado en Firebase con nuevo ID:', docRef.id);
+            console.log('💡 El ID local se reemplazará con el ID de Firebase al recargar');
+          }
         }
       } catch (error: any) {
         console.error('❌ Error al guardar en Firebase:', error);
