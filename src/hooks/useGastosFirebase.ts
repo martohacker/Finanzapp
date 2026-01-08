@@ -57,13 +57,13 @@ async function sincronizarGastosEnSegundoPlano(
     let sincronizados = 0;
     const errores: any[] = [];
     
-    // PRIMERO: Verificar conectividad y permisos de lectura (más rápido)
-    console.log('🔍 Paso 1: Verificando conectividad con Firebase...');
+    // PRIMERO: Verificar conectividad con una consulta simple (sin orderBy)
+    console.log('🔍 Paso 1: Verificando conectividad básica con Firebase...');
     try {
-      const testQuery = query(
+      // Consulta simple sin orderBy para verificar conectividad básica
+      const simpleQuery = query(
         gastosRef,
-        where('user_id', '==', userId),
-        orderBy('fecha', 'desc')
+        where('user_id', '==', userId)
       );
       const testTimeout = new Promise((_, reject) => {
         setTimeout(() => {
@@ -73,28 +73,71 @@ async function sincronizarGastosEnSegundoPlano(
         }, 5000);
       });
       
-      await Promise.race([getDocs(testQuery), testTimeout]);
-      console.log('✅ Firebase responde correctamente (lectura OK)');
+      await Promise.race([getDocs(simpleQuery), testTimeout]);
+      console.log('✅ Firebase responde correctamente (conectividad básica OK)');
+      
+      // SEGUNDO: Verificar que el índice compuesto existe (consulta con orderBy)
+      console.log('🔍 Paso 1.5: Verificando índice compuesto...');
+      try {
+        const indexQuery = query(
+          gastosRef,
+          where('user_id', '==', userId),
+          orderBy('fecha', 'desc')
+        );
+        const indexTimeout = new Promise((_, reject) => {
+          setTimeout(() => {
+            const timeoutError: any = new Error('Timeout: Falta el índice compuesto');
+            timeoutError.code = 'index-timeout';
+            reject(timeoutError);
+          }, 5000);
+        });
+        
+        await Promise.race([getDocs(indexQuery), indexTimeout]);
+        console.log('✅ Índice compuesto OK');
+      } catch (indexError: any) {
+        if (indexError?.code === 'failed-precondition' || indexError?.code === 'index-timeout') {
+          console.error('🔴 FALTA EL ÍNDICE COMPUESTO en Firestore');
+          console.error('📋 Esto es CRÍTICO para que las consultas funcionen');
+          console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Indexes');
+          console.error('📋 Crea un índice con:');
+          console.error('   - Collection: gastos');
+          console.error('   - Fields: user_id (Ascending), fecha (Descending)');
+          console.error('📋 O haz clic en el enlace del error si aparece uno');
+          alert('⚠️ Falta el índice compuesto en Firestore\n\nVe a Firebase Console → Firestore Database → Indexes y crea el índice.\n\nRevisa la consola para más detalles.');
+          return;
+        }
+        throw indexError;
+      }
     } catch (readTestError: any) {
       if (readTestError?.code === 'read-timeout') {
         console.error('🔴 Firebase no responde después de 5 segundos');
         console.error('📋 Posibles causas:');
         console.error('   1. Problema de conexión a internet');
-        console.error('   2. Firebase está caído (poco probable)');
-        console.error('   3. El dominio no está autorizado en Firebase Authentication');
-        console.error('📋 SOLUCIÓN: Ve a Firebase Console → Authentication → Settings → Authorized domains');
-        console.error('📋 Agrega: martohacker.github.io');
-        alert('⚠️ Firebase no responde\n\nVerifica tu conexión a internet y que el dominio esté autorizado en Firebase.\n\nRevisa la consola para más detalles.');
+        console.error('   2. Las reglas de Firestore están bloqueando la lectura');
+        console.error('   3. El dominio no está autorizado (aunque dices que sí)');
+        console.error('📋 Verifica en Firebase Console:');
+        console.error('   - Firestore Database → Rules (deben permitir lectura)');
+        console.error('   - Authentication → Settings → Authorized domains');
+        alert('⚠️ Firebase no responde\n\nVerifica las reglas de Firestore y la conexión a internet.\n\nRevisa la consola para más detalles.');
         return;
       } else if (readTestError?.code === 'permission-denied') {
         console.error('🔴 PERMISOS DENEGADOS en lectura');
-        console.error('📋 Las reglas de Firestore están bloqueando incluso la lectura');
+        console.error('📋 Las reglas de Firestore están bloqueando la lectura');
+        console.error('📋 SOLUCIÓN: Ve a Firebase Console → Firestore Database → Rules');
+        console.error('📋 Asegúrate de que las reglas permitan lectura para usuarios autenticados');
+        alert('❌ Permisos denegados en Firestore\n\nLas reglas están bloqueando la lectura.\n\nRevisa la consola para más detalles.');
+        return;
+      } else if (readTestError?.code === 'failed-precondition') {
+        console.error('🔴 FALTA EL ÍNDICE COMPUESTO');
+        console.error('📋 Ve a Firebase Console → Firestore Database → Indexes');
+        alert('⚠️ Falta el índice compuesto\n\nCrea el índice en Firebase Console.\n\nRevisa la consola para más detalles.');
+        return;
       } else {
         console.warn('⚠️ Error en prueba de lectura (continuando de todas formas):', readTestError);
       }
     }
     
-    // SEGUNDO: Intentar sincronizar el primer gasto para detectar errores de escritura
+    // TERCERO: Intentar sincronizar el primer gasto para detectar errores de escritura
     if (gastosLocal.length > 0) {
       const primerGasto = gastosLocal[0];
       console.log('🧪 Paso 2: Prueba de escritura con el primer gasto:', primerGasto.descripcion);
