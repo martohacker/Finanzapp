@@ -57,6 +57,32 @@ async function sincronizarGastosEnSegundoPlano(
     let sincronizados = 0;
     const errores: any[] = [];
     
+    // PRIMERO: Verificar estado de autenticación en detalle
+    console.log('🔍 Paso 0: Verificando estado de autenticación...');
+    console.log('📋 Detalles de autenticación:', {
+      tieneAuth: !!auth,
+      tieneCurrentUser: !!auth?.currentUser,
+      currentUserUid: auth?.currentUser?.uid,
+      userId: userId,
+      coinciden: auth?.currentUser?.uid === userId,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+    });
+    
+    if (!auth?.currentUser) {
+      console.error('🔴 ERROR: No hay usuario autenticado en Firebase');
+      console.error('📋 Esto significa que las reglas de Firestore bloquearán todas las operaciones');
+      console.error('📋 SOLUCIÓN: El usuario debe estar autenticado antes de sincronizar');
+      alert('❌ No hay usuario autenticado\n\nDebes iniciar sesión primero.\n\nRevisa la consola para más detalles.');
+      return;
+    }
+    
+    if (auth.currentUser.uid !== userId) {
+      console.error('🔴 ERROR: El userId no coincide con el usuario autenticado');
+      console.error('📋 Esto causará que las reglas de Firestore bloqueen las operaciones');
+      return;
+    }
+    
     // PRIMERO: Verificar conectividad con una consulta simple (sin orderBy)
     console.log('🔍 Paso 1: Verificando conectividad básica con Firebase...');
     try {
@@ -73,8 +99,10 @@ async function sincronizarGastosEnSegundoPlano(
         }, 5000);
       });
       
-      await Promise.race([getDocs(simpleQuery), testTimeout]);
+      console.log('📤 Enviando consulta a Firebase...');
+      const resultado = await Promise.race([getDocs(simpleQuery), testTimeout]);
       console.log('✅ Firebase responde correctamente (conectividad básica OK)');
+      console.log('📊 Documentos encontrados:', (resultado as any).size || 0);
       
       // SEGUNDO: Verificar que el índice compuesto existe (consulta con orderBy)
       console.log('🔍 Paso 1.5: Verificando índice compuesto...');
@@ -111,14 +139,36 @@ async function sincronizarGastosEnSegundoPlano(
     } catch (readTestError: any) {
       if (readTestError?.code === 'read-timeout') {
         console.error('🔴 Firebase no responde después de 5 segundos');
-        console.error('📋 Posibles causas:');
-        console.error('   1. Problema de conexión a internet');
-        console.error('   2. Las reglas de Firestore están bloqueando la lectura');
-        console.error('   3. El dominio no está autorizado (aunque dices que sí)');
-        console.error('📋 Verifica en Firebase Console:');
-        console.error('   - Firestore Database → Rules (deben permitir lectura)');
-        console.error('   - Authentication → Settings → Authorized domains');
-        alert('⚠️ Firebase no responde\n\nVerifica las reglas de Firestore y la conexión a internet.\n\nRevisa la consola para más detalles.');
+        console.error('📋 Diagnóstico:');
+        console.error('   - Usuario autenticado:', !!auth?.currentUser);
+        console.error('   - UID del usuario:', auth?.currentUser?.uid);
+        console.error('   - userId esperado:', userId);
+        console.error('   - Índice compuesto: ✅ Existe y está habilitado');
+        console.error('   - Dominio autorizado: ✅ Confirmado por el usuario');
+        console.error('');
+        console.error('📋 CAUSA MÁS PROBABLE: Las reglas de Firestore están bloqueando la lectura');
+        console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
+        console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
+        console.error(`
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /gastos/{gastoId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.user_id;
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.user_id;
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.user_id;
+    }
+  }
+}`);
+        console.error('📋 Luego haz clic en "Publish" y espera 1-2 minutos');
+        console.error('');
+        console.error('📋 Si las reglas ya están correctas, verifica:');
+        console.error('   - Que el usuario esté realmente autenticado (ve a Authentication → Users)');
+        console.error('   - Que el user_id en los documentos coincida con auth.uid');
+        alert('⚠️ Firebase no responde\n\nEl problema más probable son las REGLAS DE FIRESTORE.\n\nVe a Firebase Console → Firestore Database → Rules y verifica/corrige las reglas.\n\nRevisa la consola para ver las reglas exactas que debes usar.');
         return;
       } else if (readTestError?.code === 'permission-denied') {
         console.error('🔴 PERMISOS DENEGADOS en lectura');
