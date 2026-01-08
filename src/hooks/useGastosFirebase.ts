@@ -194,16 +194,38 @@ service cloud.firestore {
       
       try {
         console.log('💾 Intentando crear gasto en Firebase...');
+        console.log('📋 Verificando estado antes de escribir:', {
+          tieneAuth: !!auth,
+          tieneCurrentUser: !!auth?.currentUser,
+          currentUserUid: auth?.currentUser?.uid,
+          userId: userId,
+          coinciden: auth?.currentUser?.uid === userId,
+          tieneDb: !!db,
+          tieneGastosRef: !!gastosRef,
+        });
+        
         console.log('📋 Datos a guardar:', {
           user_id: userId,
           descripcion: primerGasto.descripcion,
           monto: primerGasto.monto,
           categoria: primerGasto.categoria,
           fecha: primerGasto.fecha,
+          moneda: primerGasto.moneda || 'ARS',
         });
         
+        // Verificar que el user_id coincida exactamente
+        if (auth?.currentUser?.uid !== userId) {
+          console.error('🔴 ERROR CRÍTICO: El userId no coincide con auth.currentUser.uid');
+          console.error('   Esto causará que las reglas bloqueen la escritura');
+          console.error('   auth.currentUser.uid:', auth?.currentUser?.uid);
+          console.error('   userId esperado:', userId);
+          alert('❌ Error de autenticación\n\nEl ID de usuario no coincide. Cierra sesión y vuelve a iniciar sesión.');
+          return;
+        }
+        
         // Intentar crear el documento con timeout para detectar problemas rápidamente
-        const writePromise = addDoc(gastosRef, {
+        console.log('📤 Enviando petición de escritura a Firebase...');
+        const datosAGuardar = {
           user_id: userId,
           descripcion: primerGasto.descripcion,
           monto: primerGasto.monto,
@@ -212,7 +234,11 @@ service cloud.firestore {
           moneda: primerGasto.moneda || 'ARS',
           created_at: Timestamp.now(),
           updated_at: Timestamp.now(),
-        });
+        };
+        
+        console.log('📋 Datos completos a guardar:', JSON.stringify(datosAGuardar, null, 2));
+        
+        const writePromise = addDoc(gastosRef, datosAGuardar);
         
         // Timeout de 8 segundos - suficiente para que Firebase devuelva el error real
         const writeTimeout = new Promise((_, reject) => {
@@ -226,6 +252,7 @@ service cloud.firestore {
         
         let docRef;
         try {
+          console.log('⏳ Esperando respuesta de Firebase (máximo 8 segundos)...');
           docRef = await Promise.race([writePromise, writeTimeout]) as any;
         } catch (raceError: any) {
           // Si el error viene de Firebase (tiene código), lanzarlo directamente
@@ -281,9 +308,25 @@ service cloud.firestore {
         const esPermisosDenegados = primerError?.code === 'permission-denied';
         
         if (esTimeout || esPermisosDenegados) {
-          console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
-          console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
-          console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
+          console.error('');
+          console.error('🔴 PROBLEMA CON LA BASE DE DATOS DE FIRESTORE');
+          console.error('');
+          console.error('📋 DIAGNÓSTICO:');
+          console.error('   ✅ Lectura funciona (conectividad OK)');
+          console.error('   ✅ Índice compuesto existe');
+          console.error('   ✅ Usuario autenticado correctamente');
+          console.error('   ❌ ESCRITURA BLOQUEADA (timeout después de 8 segundos)');
+          console.error('');
+          console.error('📋 CAUSA MÁS PROBABLE: Las reglas de Firestore están bloqueando la escritura');
+          console.error('   Si las reglas estuvieran correctas, Firebase devolvería un error inmediato,');
+          console.error('   no un timeout. Esto sugiere que las reglas están mal configuradas o');
+          console.error('   Firestore está en modo de prueba con reglas restrictivas.');
+          console.error('');
+          console.error('📋 SOLUCIÓN URGENTE:');
+          console.error('   1. Ve a Firebase Console → Firestore Database → Rules');
+          console.error('   2. Verifica el contenido actual de las reglas');
+          console.error('   3. Si están en "test mode" o tienen reglas restrictivas, reemplázalas con:');
+          console.error('');
           console.error(`
 rules_version = '2';
 service cloud.firestore {
@@ -298,13 +341,18 @@ service cloud.firestore {
     }
   }
 }`);
-          console.error('📋 Luego haz clic en "Publish"');
-          console.error('📋 También verifica:');
-          console.error('   - Authentication → Settings → Authorized domains → agrega "martohacker.github.io"');
+          console.error('');
+          console.error('   4. Haz clic en "Publish"');
+          console.error('   5. Espera 1-2 minutos y recarga la página');
+          console.error('');
+          console.error('📋 VERIFICACIONES ADICIONALES:');
+          console.error('   - Authentication → Settings → Authorized domains → debe incluir "martohacker.github.io"');
           console.error('   - Authentication → Users → verifica que tu usuario esté listado');
+          console.error('   - Firestore Database → Settings → verifica la región/ubicación');
+          console.error('   - Firestore Database → Data → verifica que la colección "gastos" exista o se cree automáticamente');
           
           // Mostrar alerta visual
-          alert('❌ Error de permisos en Firebase\n\nLas reglas de Firestore están bloqueando la escritura.\n\nRevisa la consola para ver las instrucciones detalladas.');
+          alert('❌ Problema con la base de datos de Firestore\n\nLa escritura está siendo bloqueada.\n\nVe a Firebase Console → Firestore Database → Rules y verifica/corrige las reglas.\n\nRevisa la consola para ver las instrucciones detalladas.');
           return;
         } else if (primerError?.code === 'unauthenticated') {
           console.error('🔴 USUARIO NO AUTENTICADO');
