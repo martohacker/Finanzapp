@@ -73,11 +73,7 @@ async function sincronizarGastosEnSegundoPlano(
           fecha: primerGasto.fecha,
         });
         
-        // Timeout de 5 segundos para detectar problemas de permisos rápidamente
-        const writeTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout de escritura: Las reglas de Firestore probablemente están bloqueando la operación')), 5000);
-        });
-        
+        // Intentar crear el documento con timeout para detectar problemas rápidamente
         const writePromise = addDoc(gastosRef, {
           user_id: userId,
           descripcion: primerGasto.descripcion,
@@ -89,7 +85,27 @@ async function sincronizarGastosEnSegundoPlano(
           updated_at: Timestamp.now(),
         });
         
-        const docRef = await Promise.race([writePromise, writeTimeout]) as any;
+        // Timeout de 8 segundos - suficiente para que Firebase devuelva el error real
+        const writeTimeout = new Promise((_, reject) => {
+          setTimeout(() => {
+            const timeoutError: any = new Error('Timeout de escritura después de 8 segundos');
+            timeoutError.code = 'timeout';
+            timeoutError.message = 'Timeout de escritura: Las reglas de Firestore probablemente están bloqueando la operación. Si ves este mensaje, las reglas de Firestore necesitan ser configuradas.';
+            reject(timeoutError);
+          }, 8000);
+        });
+        
+        let docRef;
+        try {
+          docRef = await Promise.race([writePromise, writeTimeout]) as any;
+        } catch (raceError: any) {
+          // Si el error viene de Firebase (tiene código), lanzarlo directamente
+          if (raceError?.code && raceError.code !== 'timeout') {
+            throw raceError;
+          }
+          // Si es timeout, lanzarlo también
+          throw raceError;
+        }
         console.log('✅ PRIMER GASTO CREADO EXITOSAMENTE con ID:', docRef.id);
         sincronizados++;
         
@@ -127,12 +143,15 @@ async function sincronizarGastosEnSegundoPlano(
         }
       } catch (primerError: any) {
         console.error('🔴 ERROR AL INTENTAR CREAR EL PRIMER GASTO:', primerError);
-        console.error('📋 Código de error:', primerError?.code);
+        console.error('📋 Código de error:', primerError?.code || 'undefined (probablemente timeout)');
         console.error('📋 Mensaje:', primerError?.message);
         console.error('📋 Stack:', primerError?.stack);
         
-        // Si es timeout, es muy probable que sea un problema de permisos
-        if (primerError?.message?.includes('Timeout de escritura') || primerError?.code === 'permission-denied') {
+        // Si es timeout o permisos denegados, es un problema de reglas
+        const esTimeout = primerError?.code === 'timeout' || primerError?.message?.includes('Timeout de escritura');
+        const esPermisosDenegados = primerError?.code === 'permission-denied';
+        
+        if (esTimeout || esPermisosDenegados) {
           console.error('🔴 PERMISOS DENEGADOS: Las reglas de Firestore están bloqueando la escritura.');
           console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
           console.error('📋 Copia y pega estas reglas EXACTAMENTE:');
