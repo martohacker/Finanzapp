@@ -57,13 +57,49 @@ async function sincronizarGastosEnSegundoPlano(
     let sincronizados = 0;
     const errores: any[] = [];
     
-    // Intentar sincronizar el primer gasto para detectar errores inmediatamente
+    // PRIMERO: Verificar conectividad y permisos de lectura (más rápido)
+    console.log('🔍 Paso 1: Verificando conectividad con Firebase...');
+    try {
+      const testQuery = query(
+        gastosRef,
+        where('user_id', '==', userId),
+        orderBy('fecha', 'desc')
+      );
+      const testTimeout = new Promise((_, reject) => {
+        setTimeout(() => {
+          const timeoutError: any = new Error('Timeout de lectura: Firebase no responde');
+          timeoutError.code = 'read-timeout';
+          reject(timeoutError);
+        }, 5000);
+      });
+      
+      await Promise.race([getDocs(testQuery), testTimeout]);
+      console.log('✅ Firebase responde correctamente (lectura OK)');
+    } catch (readTestError: any) {
+      if (readTestError?.code === 'read-timeout') {
+        console.error('🔴 Firebase no responde después de 5 segundos');
+        console.error('📋 Posibles causas:');
+        console.error('   1. Problema de conexión a internet');
+        console.error('   2. Firebase está caído (poco probable)');
+        console.error('   3. El dominio no está autorizado en Firebase Authentication');
+        console.error('📋 SOLUCIÓN: Ve a Firebase Console → Authentication → Settings → Authorized domains');
+        console.error('📋 Agrega: martohacker.github.io');
+        alert('⚠️ Firebase no responde\n\nVerifica tu conexión a internet y que el dominio esté autorizado en Firebase.\n\nRevisa la consola para más detalles.');
+        return;
+      } else if (readTestError?.code === 'permission-denied') {
+        console.error('🔴 PERMISOS DENEGADOS en lectura');
+        console.error('📋 Las reglas de Firestore están bloqueando incluso la lectura');
+      } else {
+        console.warn('⚠️ Error en prueba de lectura (continuando de todas formas):', readTestError);
+      }
+    }
+    
+    // SEGUNDO: Intentar sincronizar el primer gasto para detectar errores de escritura
     if (gastosLocal.length > 0) {
       const primerGasto = gastosLocal[0];
-      console.log('🧪 Prueba de escritura con el primer gasto:', primerGasto.descripcion);
+      console.log('🧪 Paso 2: Prueba de escritura con el primer gasto:', primerGasto.descripcion);
       
       try {
-        // Intentar crear directamente sin verificar existencia primero
         console.log('💾 Intentando crear gasto en Firebase...');
         console.log('📋 Datos a guardar:', {
           user_id: userId,
