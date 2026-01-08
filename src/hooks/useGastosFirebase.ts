@@ -223,10 +223,10 @@ service cloud.firestore {
           return;
         }
         
-        // Intentar crear el documento con timeout para detectar problemas rápidamente
+        // Intentar crear el documento - primero sin timeout para capturar el error real
         console.log('📤 Enviando petición de escritura a Firebase...');
         const datosAGuardar = {
-          user_id: userId,
+          user_id: userId, // CRÍTICO: debe coincidir exactamente con auth.currentUser.uid
           descripcion: primerGasto.descripcion,
           monto: primerGasto.monto,
           categoria: primerGasto.categoria,
@@ -237,29 +237,39 @@ service cloud.firestore {
         };
         
         console.log('📋 Datos completos a guardar:', JSON.stringify(datosAGuardar, null, 2));
+        console.log('🔍 Verificación final antes de escribir:');
+        console.log('   - auth.currentUser.uid:', auth?.currentUser?.uid);
+        console.log('   - datosAGuardar.user_id:', datosAGuardar.user_id);
+        console.log('   - ¿Coinciden?:', auth?.currentUser?.uid === datosAGuardar.user_id);
         
+        // Intentar escribir SIN timeout primero para capturar el error real de Firebase
+        // Si Firebase está bloqueando, debería devolver un error inmediatamente
         const writePromise = addDoc(gastosRef, datosAGuardar);
         
-        // Timeout de 8 segundos - suficiente para que Firebase devuelva el error real
+        // Timeout de 10 segundos - más tiempo para que Firebase responda
         const writeTimeout = new Promise((_, reject) => {
           setTimeout(() => {
-            const timeoutError: any = new Error('Timeout de escritura después de 8 segundos');
+            const timeoutError: any = new Error('Timeout de escritura después de 10 segundos');
             timeoutError.code = 'timeout';
-            timeoutError.message = 'Timeout de escritura: Las reglas de Firestore probablemente están bloqueando la operación. Si ves este mensaje, las reglas de Firestore necesitan ser configuradas.';
+            timeoutError.message = 'Timeout de escritura: Firebase no responde. Esto puede indicar que las reglas están bloqueando la operación o hay un problema de conectividad.';
             reject(timeoutError);
-          }, 8000);
+          }, 10000);
         });
         
         let docRef;
         try {
-          console.log('⏳ Esperando respuesta de Firebase (máximo 8 segundos)...');
+          console.log('⏳ Esperando respuesta de Firebase (máximo 10 segundos)...');
+          console.log('💡 Si Firebase está bloqueando, debería devolver un error inmediatamente.');
+          console.log('💡 Si no hay respuesta, puede ser un problema de red o reglas mal configuradas.');
           docRef = await Promise.race([writePromise, writeTimeout]) as any;
         } catch (raceError: any) {
           // Si el error viene de Firebase (tiene código), lanzarlo directamente
           if (raceError?.code && raceError.code !== 'timeout') {
+            console.error('🔴 Firebase devolvió un error real:', raceError.code);
             throw raceError;
           }
           // Si es timeout, lanzarlo también
+          console.error('🔴 Timeout: Firebase no respondió después de 10 segundos');
           throw raceError;
         }
         console.log('✅ PRIMER GASTO CREADO EXITOSAMENTE con ID:', docRef.id);
@@ -315,17 +325,25 @@ service cloud.firestore {
           console.error('   ✅ Lectura funciona (conectividad OK)');
           console.error('   ✅ Índice compuesto existe');
           console.error('   ✅ Usuario autenticado correctamente');
-          console.error('   ❌ ESCRITURA BLOQUEADA (timeout después de 8 segundos)');
+          console.error('   ❌ ESCRITURA BLOQUEADA (timeout después de 10 segundos)');
           console.error('');
           console.error('📋 CAUSA MÁS PROBABLE: Las reglas de Firestore están bloqueando la escritura');
           console.error('   Si las reglas estuvieran correctas, Firebase devolvería un error inmediato,');
-          console.error('   no un timeout. Esto sugiere que las reglas están mal configuradas o');
-          console.error('   Firestore está en modo de prueba con reglas restrictivas.');
+          console.error('   no un timeout. Esto sugiere que:');
+          console.error('   - Las reglas no están publicadas (haz clic en "Publish")');
+          console.error('   - Hay un problema con la autenticación del usuario');
+          console.error('   - El user_id no coincide exactamente con auth.uid');
+          console.error('   - Hay un problema de red o conectividad');
           console.error('');
-          console.error('📋 SOLUCIÓN URGENTE:');
+          console.error('📋 VERIFICACIONES URGENTES:');
           console.error('   1. Ve a Firebase Console → Firestore Database → Rules');
-          console.error('   2. Verifica el contenido actual de las reglas');
-          console.error('   3. Si están en "test mode" o tienen reglas restrictivas, reemplázalas con:');
+          console.error('   2. Verifica que las reglas estén EXACTAMENTE así:');
+          console.error('   3. IMPORTANTE: Haz clic en "Publish" (aunque no hayas cambiado nada)');
+          console.error('   4. Espera 1-2 minutos después de publicar');
+          console.error('   5. Verifica en Authentication → Users que tu usuario esté listado');
+          console.error('   6. Verifica que auth.currentUser.uid coincida con el user_id que envías');
+          console.error('');
+          console.error('📋 Reglas que deben estar publicadas:');
           console.error('');
           console.error(`
 rules_version = '2';
