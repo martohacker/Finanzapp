@@ -44,7 +44,21 @@ export function useMetasAhorro(userId: string | null, usandoFirebase: boolean) {
     const key = storageKey(userId);
 
     if (usandoFirebase && isFirebaseConfigured() && db) {
-      setCargando(true);
+      // Mostrar caché al instante tras el login; Firestore actualiza en segundo plano
+      const stored = localStorage.getItem(key);
+      let mostreCache = false;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as MetaAhorro[];
+          if (Array.isArray(parsed)) {
+            setMetas(parsed);
+            setCargando(false);
+            mostreCache = true;
+          }
+        } catch { /* noop */ }
+      }
+      if (!mostreCache) setCargando(true);
+
       const q = query(
         collection(db, 'metasAhorro'),
         where('user_id', '==', userId)

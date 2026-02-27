@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Gasto, Estadisticas } from '../types';
-import { useCotizaciones } from './useCotizaciones';
+import { obtenerTipoCambio } from '../services/exchangeRate';
 
 interface UseEstadisticasConvertidasResult {
   estadisticasConvertidas: Estadisticas | null;
@@ -16,6 +16,18 @@ const crearEstadisticasVacias = (): Estadisticas => ({
   gastoDelDia: 0,
 });
 
+// Cache de tasas por par "origen|destino" para no llamar la API por cada gasto
+const cacheTasas = new Map<string, number>();
+
+async function getTasa(origen: string, destino: string): Promise<number> {
+  if (origen === destino) return 1;
+  const key = `${origen}|${destino}`;
+  if (cacheTasas.has(key)) return cacheTasas.get(key)!;
+  const tasa = await obtenerTipoCambio(origen, destino);
+  if (tasa != null) cacheTasas.set(key, tasa);
+  return tasa ?? 1;
+}
+
 // Convierte todas las estadísticas a la moneda de destino indicada (ej: 'ARS', 'USD')
 export function useEstadisticasConvertidas(
   gastos: Gasto[],
@@ -23,10 +35,11 @@ export function useEstadisticasConvertidas(
 ): UseEstadisticasConvertidasResult {
   const [estadisticasConvertidas, setEstadisticasConvertidas] = useState<Estadisticas | null>(null);
   const [cargandoConvertidas, setCargandoConvertidas] = useState(false);
-
-  const { convertirDirecto } = useCotizaciones(monedaDestino, monedaDestino);
+  const cancelRef = useRef(false);
 
   useEffect(() => {
+    cancelRef.current = false;
+
     const calcular = async () => {
       if (!gastos.length) {
         setEstadisticasConvertidas(crearEstadisticasVacias());
@@ -40,14 +53,30 @@ export function useEstadisticasConvertidas(
         const mesActual = ahora.getMonth();
         const añoActual = ahora.getFullYear();
 
+        // Obtener tasas solo para pares únicos (máximo 1 request por moneda distinta)
+        const paresUnicos = new Set<string>();
+        for (const g of gastos) {
+          const origen = g.moneda || monedaDestino;
+          if (origen !== monedaDestino) paresUnicos.add(`${origen}|${monedaDestino}`);
+        }
+        const tasasMap = new Map<string, number>();
+        for (const par of paresUnicos) {
+          if (cancelRef.current) return;
+          const [origen, destino] = par.split('|');
+          const tasa = await getTasa(origen, destino);
+          tasasMap.set(par, tasa);
+        }
+
         let totalGastos = 0;
         let gastoDelMes = 0;
         let gastoDelDia = 0;
         const gastoPorCategoria: Record<string, number> = {};
 
         for (const g of gastos) {
+          if (cancelRef.current) return;
           const origen = g.moneda || monedaDestino;
-          const montoConvertido = await convertirDirecto(g.monto, origen, monedaDestino);
+          const tasa = origen === monedaDestino ? 1 : (tasasMap.get(`${origen}|${monedaDestino}`) ?? 1);
+          const montoConvertido = g.monto * tasa;
 
           totalGastos += montoConvertido;
 
@@ -63,6 +92,8 @@ export function useEstadisticasConvertidas(
           const catId = g.categoria || 'otros';
           gastoPorCategoria[catId] = (gastoPorCategoria[catId] || 0) + montoConvertido;
         }
+
+        if (cancelRef.current) return;
 
         const diasDelMes = ahora.getDate();
         const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
@@ -88,15 +119,18 @@ export function useEstadisticasConvertidas(
           gastoDelDia,
         });
       } catch (error) {
-        console.error('Error al calcular estadísticas convertidas:', error);
-        setEstadisticasConvertidas(crearEstadisticasVacias());
+        if (!cancelRef.current) {
+          console.error('Error al calcular estadísticas convertidas:', error);
+          setEstadisticasConvertidas(crearEstadisticasVacias());
+        }
       } finally {
-        setCargandoConvertidas(false);
+        if (!cancelRef.current) setCargandoConvertidas(false);
       }
     };
 
     calcular();
-  }, [gastos, convertirDirecto, monedaDestino]);
+    return () => { cancelRef.current = true; };
+  }, [gastos, monedaDestino]);
 
   return { estadisticasConvertidas, cargandoConvertidas };
 }

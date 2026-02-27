@@ -106,8 +106,10 @@ function App() {
     gastos,
   });
 
-  // Mostrar pantalla de carga mientras se verifica la sesión
-  if (cargandoAuth || cargandoGastos || cargandoConvertidas || cargandoPresupuesto || cargandoIngresos || cargandoMetas) {
+  // Mostrar pantalla de carga solo mientras se verifica la sesión (Firebase Auth o localStorage).
+  // El resto (gastos, ingresos, metas, presupuesto, conversión) se cargan en segundo plano
+  // para que la app sea usable antes y no dependa del más lento (p. ej. API de cotizaciones).
+  if (cargandoAuth) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
         <div className="text-center">
@@ -117,6 +119,8 @@ function App() {
       </div>
     );
   }
+
+  const cargandoDatos = cargandoGastos || cargandoConvertidas || cargandoPresupuesto || cargandoIngresos || cargandoMetas;
 
   // Si no hay usuario, mostrar pantalla de login
   if (!usuarioActual) {
@@ -165,6 +169,14 @@ function App() {
             </div>
           </div>
         </header>
+
+        {/* Indicador suave mientras cargan gastos/ingresos/etc. (no bloquea la vista) */}
+        {cargandoDatos && (
+          <div className="mb-3 flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent" />
+            <span>Actualizando datos...</span>
+          </div>
+        )}
 
         {/* Banner de instalación (iOS) */}
         <BannerInstalacion />

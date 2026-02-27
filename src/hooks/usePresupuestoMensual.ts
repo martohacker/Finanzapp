@@ -19,6 +19,9 @@ const obtenerAnioMesActual = () => {
   return `${ahora.getFullYear()}-${mes}`;
 };
 
+const presupuestoStorageKey = (userId: string, anioMes: string) =>
+  `finanzapp-presupuesto-${userId}-${anioMes}`;
+
 interface UsePresupuestoMensualOptions {
   userId: string | null;
   monedaDestino: string;
@@ -53,7 +56,7 @@ export function usePresupuestoMensual({
 
   const { estadisticasConvertidas } = useEstadisticasConvertidas(gastos, monedaDestino);
 
-  // Cargar presupuesto y gastos fijos desde Firestore
+  // Cargar presupuesto y gastos fijos desde Firestore (mostrar caché al instante si hay)
   useEffect(() => {
     const cargar = async () => {
       if (!userId || !isFirebaseConfigured() || !db) {
@@ -61,7 +64,21 @@ export function usePresupuestoMensual({
         return;
       }
 
-      setCargando(true);
+      const key = presupuestoStorageKey(userId, anioMes);
+      const stored = localStorage.getItem(key);
+      let mostreCache = false;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as { presupuesto: PresupuestoMensual | null; gastosFijos: GastoFijo[] };
+          if (parsed && Array.isArray(parsed.gastosFijos)) {
+            setPresupuesto(parsed.presupuesto ?? null);
+            setGastosFijos(parsed.gastosFijos);
+            setCargando(false);
+            mostreCache = true;
+          }
+        } catch { /* noop */ }
+      }
+      if (!mostreCache) setCargando(true);
       setError(null);
 
       try {
@@ -74,16 +91,18 @@ export function usePresupuestoMensual({
         );
         const snapshot = await getDocs(q);
 
+        let presupuestoActual: PresupuestoMensual | null = null;
         if (!snapshot.empty) {
           const docSnap = snapshot.docs[0];
           const data = docSnap.data();
-          setPresupuesto({
+          presupuestoActual = {
             id: docSnap.id,
             userId,
             anioMes,
             moneda: (data.moneda as string) || monedaDestino,
             monto: (data.monto as number) || 0,
-          });
+          };
+          setPresupuesto(presupuestoActual);
         } else {
           // Crear presupuesto inicial en 0
           const nuevo = {
@@ -94,13 +113,14 @@ export function usePresupuestoMensual({
             created_at: new Date().toISOString(),
           };
           const docRef = await addDoc(presupuestosRef, nuevo);
-          setPresupuesto({
+          presupuestoActual = {
             id: docRef.id,
             userId,
             anioMes,
             moneda: monedaDestino,
             monto: 0,
-          });
+          };
+          setPresupuesto(presupuestoActual);
         }
 
         // Gastos fijos
@@ -126,6 +146,7 @@ export function usePresupuestoMensual({
           });
         });
         setGastosFijos(lista);
+        localStorage.setItem(key, JSON.stringify({ presupuesto: presupuestoActual, gastosFijos: lista }));
       } catch (e) {
         console.error('Error al cargar presupuesto/gastos fijos:', e);
         setError('No se pudo cargar el presupuesto del mes.');

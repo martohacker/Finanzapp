@@ -68,7 +68,21 @@ export function useIngresosFirebase(userId: string | null, usandoFirebase: boole
         return;
       }
 
-      setCargando(true);
+      // Mostrar caché al instante tras el login; Firestore actualiza en segundo plano
+      const stored = localStorage.getItem(key);
+      let mostreCache = false;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as Ingreso[];
+          if (Array.isArray(parsed)) {
+            setIngresos(parsed);
+            setCargando(false);
+            mostreCache = true;
+          }
+        } catch { /* noop */ }
+      }
+      if (!mostreCache) setCargando(true);
+
       unsubRef.current = onSnapshot(
         q,
         (snapshot) => {

@@ -99,7 +99,20 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
         return;
       }
 
-      setCargando(true);
+      // Mostrar caché al instante tras el login; Firestore actualiza en segundo plano
+      const stored = localStorage.getItem(storageKey);
+      let mostreCache = false;
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as Gasto[];
+          if (Array.isArray(parsed)) {
+            setGastos(parsed);
+            setCargando(false);
+            mostreCache = true;
+          }
+        } catch { /* noop */ }
+      }
+      if (!mostreCache) setCargando(true);
       setErrorFirebase(null);
 
       unsubscribeRef.current = onSnapshot(
