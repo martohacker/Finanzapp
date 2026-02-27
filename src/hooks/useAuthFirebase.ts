@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   User as FirebaseUser,
   updateProfile
 } from 'firebase/auth';
@@ -303,11 +304,39 @@ export function useAuthFirebase() {
   };
 
   const cerrarSesion = async () => {
+    setFirebaseUser(null);
+    setUsuarioActual(null);
+    localStorage.removeItem(STORAGE_SESION);
     if (isFirebaseConfigured() && auth) {
-      await signOut(auth);
-    } else {
-      setUsuarioActual(null);
-      localStorage.removeItem(STORAGE_SESION);
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.warn('Error al cerrar sesión en Firebase:', e);
+      }
+    }
+  };
+
+  const recuperarContrasena = async (email: string): Promise<{ exito: boolean; error?: string }> => {
+    if (!isFirebaseConfigured() || !auth) {
+      return { exito: false, error: 'La recuperación de contraseña solo está disponible con Firebase.' };
+    }
+    if (!email || !email.includes('@')) {
+      return { exito: false, error: 'Ingresa un email válido.' };
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { exito: true };
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      let mensaje = 'No se pudo enviar el correo de recuperación.';
+      if (err?.code === 'auth/user-not-found') {
+        mensaje = 'No hay ninguna cuenta con ese email.';
+      } else if (err?.code === 'auth/invalid-email') {
+        mensaje = 'Email inválido.';
+      } else if (err?.message) {
+        mensaje = err.message;
+      }
+      return { exito: false, error: mensaje };
     }
   };
 
@@ -317,6 +346,7 @@ export function useAuthFirebase() {
     registrar,
     login,
     cerrarSesion,
+    recuperarContrasena,
     usandoFirebase,
     firebaseUser,
   };

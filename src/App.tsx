@@ -41,7 +41,7 @@ function App() {
   const [filtrosGastos, setFiltrosGastos] = useState<FiltrosGastosState>(emptyFiltros());
 
   const { theme, toggleTheme } = useTheme();
-  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion, usandoFirebase } = useAuthFirebase();
+  const { usuarioActual, cargando: cargandoAuth, registrar, login, cerrarSesion, recuperarContrasena, usandoFirebase } = useAuthFirebase();
   const { gastos, cargando: cargandoGastos, errorFirebase, agregarGasto, eliminarGasto, editarGasto } = useGastosFirebase(usuarioActual?.id || null, usandoFirebase);
   const { ingresos, cargando: cargandoIngresos, agregarIngreso, eliminarIngreso } = useIngresosFirebase(usuarioActual?.id || null, usandoFirebase);
   const { metas, cargando: cargandoMetas, agregarMeta, actualizarMontoActual, eliminarMeta } = useMetasAhorro(usuarioActual?.id || null, usandoFirebase);
@@ -124,7 +124,7 @@ function App() {
 
   // Si no hay usuario, mostrar pantalla de login
   if (!usuarioActual) {
-    return <Login onLogin={login} onRegistrar={registrar} />;
+    return <Login onLogin={login} onRegistrar={registrar} onRecuperarContrasena={recuperarContrasena} />;
   }
 
   return (
