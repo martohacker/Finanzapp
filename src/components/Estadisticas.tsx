@@ -53,21 +53,12 @@ export function Estadisticas({ estadisticas, moneda }: EstadisticasProps) {
           return (
             <div
               key={index}
-<<<<<<< Updated upstream
-              className="bg-white rounded-lg shadow-md p-3 sm:p-4 md:p-6 hover:shadow-lg active:shadow-md transition-shadow touch-manipulation"
-=======
               className="bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-none dark:border dark:border-slate-700 p-6 hover:shadow-lg dark:hover:border-slate-600 transition-all"
->>>>>>> Stashed changes
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
-<<<<<<< Updated upstream
-                  <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">{card.titulo}</p>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800 truncate">{card.valor}</p>
-=======
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 mb-1 truncate">{card.titulo}</p>
                   <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-slate-100 truncate">{card.valor}</p>
->>>>>>> Stashed changes
                 </div>
                 <div className={`${card.color} p-1.5 sm:p-2 md:p-3 rounded-full flex-shrink-0`}>
                   <Icono className="text-white" size={16} />
@@ -78,13 +69,8 @@ export function Estadisticas({ estadisticas, moneda }: EstadisticasProps) {
         })}
       </div>
 
-<<<<<<< Updated upstream
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 sm:mb-6">Desglose por Categoría</h3>
-=======
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-none dark:border dark:border-slate-700 p-6">
         <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100 mb-4">Desglose por Categoría</h3>
->>>>>>> Stashed changes
         <div className="space-y-3">
           {Object.entries(estadisticas.gastoPorCategoria)
             .filter(([, monto]) => monto > 0)

@@ -45,18 +45,9 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
   }
 
   return (
-<<<<<<< Updated upstream
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1">Gastos Recientes</h2>
-        <p className="text-xs sm:text-sm text-gray-600">Historial de tus transacciones</p>
-      </div>
-      <div className="space-y-3 sm:space-y-4">
-=======
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-none dark:border dark:border-slate-700 p-4 sm:p-6">
       <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4">Gastos Recientes</h2>
       <div className="space-y-3">
->>>>>>> Stashed changes
         {gastos.map(gasto => {
           const categoria = obtenerCategoria(gasto.categoria);
           const monedaGasto = obtenerMonedaGasto(gasto.moneda);
@@ -65,11 +56,7 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
           return (
             <div
               key={gasto.id}
-<<<<<<< Updated upstream
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
-=======
               className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
->>>>>>> Stashed changes
             >
               {/* Icono de categoría */}
               <div
@@ -81,16 +68,6 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
 
               {/* Contenido principal */}
               <div className="flex-1 min-w-0 w-full sm:w-auto">
-<<<<<<< Updated upstream
-                <div className="flex items-start sm:items-center gap-2 flex-wrap mb-1">
-                  <p className="font-semibold text-sm sm:text-base text-gray-800 flex-1 min-w-0 break-words">{gasto.descripcion}</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className="text-xs px-2 py-0.5 sm:py-1 rounded-full text-white whitespace-nowrap flex-shrink-0"
-                      style={{ backgroundColor: categoria.color }}
-                    >
-                      {categoria.nombre}
-=======
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <p className="font-semibold text-gray-800 dark:text-slate-100 truncate">{gasto.descripcion}</p>
                   <span
@@ -102,20 +79,10 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
                   {gasto.moneda && gasto.moneda !== moneda.codigo && (
                     <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-300 whitespace-nowrap flex-shrink-0">
                       {monedaGasto.simbolo} {gasto.moneda}
->>>>>>> Stashed changes
                     </span>
-                    {gasto.moneda && gasto.moneda !== moneda.codigo && (
-                      <span className="text-xs px-2 py-0.5 sm:py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap flex-shrink-0">
-                        {monedaGasto.simbolo} {gasto.moneda}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
-<<<<<<< Updated upstream
-                <p className="text-xs sm:text-sm text-gray-500">{formatearFecha(gasto.fecha)}</p>
-=======
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">{formatearFecha(gasto.fecha)}</p>
->>>>>>> Stashed changes
                 
                 {/* Conversión en móvil */}
                 {mostrarConversion && (
@@ -129,15 +96,9 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
               </div>
 
               {/* Monto y acciones */}
-<<<<<<< Updated upstream
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-2 sm:pt-0">
-                <div className="text-left sm:text-right flex-1 sm:flex-none">
-                  <p className="font-bold text-base sm:text-lg text-gray-900 whitespace-nowrap">
-=======
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
                 <div className="text-left sm:text-right">
                   <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-slate-100 whitespace-nowrap">
->>>>>>> Stashed changes
                     {formatearMonto(gasto.monto, monedaGasto)}
                   </p>
                   {mostrarConversion && (

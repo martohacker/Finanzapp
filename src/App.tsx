@@ -124,26 +124,6 @@ function App() {
   }
 
   return (
-<<<<<<< Updated upstream
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pb-20 sm:pb-8">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
-        {/* Header - Sticky en móvil */}
-        <header className="mb-4 sm:mb-8 sticky top-0 z-10 bg-gradient-to-br from-gray-50 to-gray-100 pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <div className="bg-primary-600 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <Wallet className="text-white" size={20} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 truncate">FinanzApp</h1>
-                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Control total de tus finanzas personales</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              <div className="flex items-center gap-2 bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-sm text-xs sm:text-sm">
-                <User size={16} className="text-primary-600 flex-shrink-0" />
-                <span className="font-medium text-gray-700 truncate max-w-[120px] sm:max-w-none">{usuarioActual.nombre}</span>
-=======
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 pb-24">
       <Onboarding onCerrar={() => {}} />
 
@@ -172,16 +152,11 @@ function App() {
               <div className="flex items-center gap-2 bg-white dark:bg-slate-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-slate-600">
                 <User size={18} className="text-primary-600 dark:text-primary-400" />
                 <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{usuarioActual.nombre}</span>
->>>>>>> Stashed changes
               </div>
               <SelectorMoneda monedaActual={moneda} onCambiarMoneda={cambiarMoneda} />
               <button
                 onClick={cerrarSesion}
-<<<<<<< Updated upstream
-                className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-lg transition-colors text-xs sm:text-sm font-medium touch-manipulation"
-=======
                 className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-colors text-sm font-medium border border-red-200 dark:border-red-800/50"
->>>>>>> Stashed changes
                 title="Cerrar sesión"
               >
                 <LogOut size={16} />
@@ -192,78 +167,8 @@ function App() {
         </header>
 
         {/* Banner de instalación (iOS) */}
-        <div className="mb-6 sm:mb-8">
-          <BannerInstalacion />
-        </div>
+        <BannerInstalacion />
 
-<<<<<<< Updated upstream
-        {/* Exportar/Importar datos */}
-        {!usandoFirebase && (
-          <div className="mb-6 sm:mb-8">
-            <ExportarDatos 
-              gastos={gastos} 
-              usuarioId={usuarioActual.id}
-              usuarioNombre={usuarioActual.nombre}
-            />
-          </div>
-        )}
-
-        {/* Sección: Estadísticas */}
-        <section className="mb-8 sm:mb-10">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">📊 Resumen Financiero</h2>
-            <p className="text-sm text-gray-600">Vista general de tus gastos</p>
-          </div>
-          <Estadisticas estadisticas={estadisticas} moneda={monedaActual} />
-        </section>
-
-        {/* Sección: Conversión a Pesos Argentinos */}
-        {monedaActual.codigo !== 'ARS' && (
-          <section className="mb-8 sm:mb-10">
-            <div className="mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">💱 Conversión a Pesos</h2>
-              <p className="text-sm text-gray-600">Equivalencia en pesos argentinos</p>
-            </div>
-            <ResumenConversion 
-              estadisticas={estadisticas} 
-              monedaActual={monedaActual} 
-            />
-          </section>
-        )}
-
-        {/* Sección: Gráficos */}
-        <section className="mb-8 sm:mb-10">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">📈 Visualización</h2>
-            <p className="text-sm text-gray-600">Gráficos y análisis de tus gastos</p>
-          </div>
-          <GastosChart estadisticas={estadisticas} moneda={monedaActual} />
-        </section>
-
-        {/* Sección: Gestión de Gastos */}
-        <section className="mb-8 sm:mb-10">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">💰 Gestión de Gastos</h2>
-            <p className="text-sm text-gray-600">Agrega y gestiona tus gastos</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            {/* Formulario */}
-            <div className="lg:col-span-1 order-2 lg:order-1">
-              <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
-            </div>
-
-            {/* Lista de gastos */}
-            <div className="lg:col-span-2 order-1 lg:order-2">
-              <GastoList 
-                gastos={gastos} 
-                onEliminarGasto={eliminarGasto} 
-                onEditarGasto={editarGasto}
-                moneda={monedaActual} 
-              />
-            </div>
-          </div>
-        </section>
-=======
         {/* Aviso si hay error de conexión */}
         {errorFirebase && (
           <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
@@ -441,7 +346,6 @@ function App() {
             />
           </div>
         )}
->>>>>>> Stashed changes
       </div>
 
       {/* Botón flotante agregar gasto rápido */}

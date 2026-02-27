@@ -40,45 +40,6 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
     'border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm';
 
   return (
-<<<<<<< Updated upstream
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
-      <div className="mb-4 sm:mb-5">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1">Agregar Gasto</h2>
-        <p className="text-xs sm:text-sm text-gray-600">Registra un nuevo gasto</p>
-      </div>
-      
-      <div>
-        <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-1">
-          Descripción
-        </label>
-        <input
-          id="descripcion"
-          type="text"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          placeholder="Ej: Almuerzo en restaurante"
-          required
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="monto" className="block text-sm font-medium text-gray-700 mb-1">
-            Monto
-          </label>
-          <input
-            id="monto"
-            type="number"
-            step="0.01"
-            min="0"
-            value={monto}
-            onChange={(e) => setMonto(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="0.00"
-            required
-          />
-=======
     <form
       onSubmit={handleSubmit}
       className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg dark:shadow-none dark:border dark:border-slate-700 overflow-hidden transition-shadow hover:shadow-xl dark:hover:border-slate-600"
@@ -130,7 +91,6 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
               <span className="hidden sm:inline">Agregar</span>
             </button>
           </div>
->>>>>>> Stashed changes
         </div>
 
         {/* Toggle "Fecha y moneda" */}
@@ -185,51 +145,6 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
           </div>
         </div>
       </div>
-<<<<<<< Updated upstream
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-1">
-            Fecha
-          </label>
-          <input
-            id="fecha"
-            type="date"
-            value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="categoria" className="block text-sm font-medium text-gray-700 mb-1">
-            Categoría
-          </label>
-          <select
-            id="categoria"
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-            {CATEGORIAS.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.icono} {cat.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        className="w-full bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-semibold py-3 sm:py-3.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-base sm:text-lg touch-manipulation shadow-md hover:shadow-lg"
-      >
-        <Plus size={20} />
-        Agregar Gasto
-      </button>
-=======
->>>>>>> Stashed changes
     </form>
   );
 }
