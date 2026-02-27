@@ -5,16 +5,17 @@ import { Moneda, MONEDAS } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { ConversionPesos } from './ConversionPesos';
 import { EditarGasto } from './EditarGasto';
-import { Trash2, Edit2 } from 'lucide-react';
+import { Trash2, Edit2, Copy } from 'lucide-react';
 
 interface GastoListProps {
   gastos: Gasto[];
   onEliminarGasto: (id: string) => void;
   onEditarGasto: (id: string, gasto: Omit<Gasto, 'id'>) => void;
+  onRepetirGasto?: (gasto: Omit<Gasto, 'id'>) => void;
   moneda: Moneda;
 }
 
-export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: GastoListProps) {
+export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGasto, moneda }: GastoListProps) {
   const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
   const formatearFecha = (fecha: string) => {
     const date = new Date(fecha);
@@ -36,20 +37,26 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
 
   if (gastos.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <p className="text-gray-500 text-lg">No hay gastos registrados aún</p>
-        <p className="text-gray-400 text-sm mt-2">Agrega tu primer gasto usando el formulario</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-none dark:border dark:border-slate-700 p-8 text-center">
+        <p className="text-gray-500 dark:text-slate-400 text-lg">No hay gastos registrados aún</p>
+        <p className="text-gray-400 dark:text-slate-500 text-sm mt-2">Agrega tu primer gasto usando el formulario</p>
       </div>
     );
   }
 
   return (
+<<<<<<< Updated upstream
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
       <div className="mb-4 sm:mb-6">
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 mb-1">Gastos Recientes</h2>
         <p className="text-xs sm:text-sm text-gray-600">Historial de tus transacciones</p>
       </div>
       <div className="space-y-3 sm:space-y-4">
+=======
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md dark:shadow-none dark:border dark:border-slate-700 p-4 sm:p-6">
+      <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4">Gastos Recientes</h2>
+      <div className="space-y-3">
+>>>>>>> Stashed changes
         {gastos.map(gasto => {
           const categoria = obtenerCategoria(gasto.categoria);
           const monedaGasto = obtenerMonedaGasto(gasto.moneda);
@@ -58,7 +65,11 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
           return (
             <div
               key={gasto.id}
+<<<<<<< Updated upstream
               className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+=======
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
+>>>>>>> Stashed changes
             >
               {/* Icono de categoría */}
               <div
@@ -70,6 +81,7 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
 
               {/* Contenido principal */}
               <div className="flex-1 min-w-0 w-full sm:w-auto">
+<<<<<<< Updated upstream
                 <div className="flex items-start sm:items-center gap-2 flex-wrap mb-1">
                   <p className="font-semibold text-sm sm:text-base text-gray-800 flex-1 min-w-0 break-words">{gasto.descripcion}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -78,6 +90,19 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
                       style={{ backgroundColor: categoria.color }}
                     >
                       {categoria.nombre}
+=======
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <p className="font-semibold text-gray-800 dark:text-slate-100 truncate">{gasto.descripcion}</p>
+                  <span
+                    className="text-xs px-2 py-1 rounded-full text-white whitespace-nowrap flex-shrink-0"
+                    style={{ backgroundColor: categoria.color }}
+                  >
+                    {categoria.nombre}
+                  </span>
+                  {gasto.moneda && gasto.moneda !== moneda.codigo && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-300 whitespace-nowrap flex-shrink-0">
+                      {monedaGasto.simbolo} {gasto.moneda}
+>>>>>>> Stashed changes
                     </span>
                     {gasto.moneda && gasto.moneda !== moneda.codigo && (
                       <span className="text-xs px-2 py-0.5 sm:py-1 rounded-full bg-gray-200 text-gray-700 whitespace-nowrap flex-shrink-0">
@@ -86,7 +111,11 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
                     )}
                   </div>
                 </div>
+<<<<<<< Updated upstream
                 <p className="text-xs sm:text-sm text-gray-500">{formatearFecha(gasto.fecha)}</p>
+=======
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">{formatearFecha(gasto.fecha)}</p>
+>>>>>>> Stashed changes
                 
                 {/* Conversión en móvil */}
                 {mostrarConversion && (
@@ -100,9 +129,15 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
               </div>
 
               {/* Monto y acciones */}
+<<<<<<< Updated upstream
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-2 sm:pt-0">
                 <div className="text-left sm:text-right flex-1 sm:flex-none">
                   <p className="font-bold text-base sm:text-lg text-gray-900 whitespace-nowrap">
+=======
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto justify-between sm:justify-start">
+                <div className="text-left sm:text-right">
+                  <p className="font-bold text-base sm:text-lg text-gray-900 dark:text-slate-100 whitespace-nowrap">
+>>>>>>> Stashed changes
                     {formatearMonto(gasto.monto, monedaGasto)}
                   </p>
                   {mostrarConversion && (
@@ -115,6 +150,21 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, moneda }: Ga
                   )}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
+                  {onRepetirGasto && (
+                    <button
+                      onClick={() => onRepetirGasto({
+                        descripcion: gasto.descripcion,
+                        monto: gasto.monto,
+                        categoria: gasto.categoria,
+                        fecha: new Date().toISOString().split('T')[0],
+                        moneda: gasto.moneda,
+                      })}
+                      className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                      title="Repetir gasto (misma descripción y monto, fecha hoy)"
+                    >
+                      <Copy size={18} />
+                    </button>
+                  )}
                   <button
                     onClick={() => setGastoEditando(gasto)}
                     className="p-2 sm:p-2.5 text-blue-500 hover:bg-blue-50 active:bg-blue-100 rounded-lg transition-colors touch-manipulation"

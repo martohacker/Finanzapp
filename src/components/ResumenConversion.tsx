@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Estadisticas as EstadisticasType } from '../types';
+import { Estadisticas as EstadisticasType, Gasto } from '../types';
 import { Moneda } from '../constants/monedas';
 import { useCotizaciones } from '../hooks/useCotizaciones';
 import { formatearMonto } from '../utils/formato';
@@ -9,12 +9,14 @@ interface ResumenConversionProps {
   estadisticas: EstadisticasType;
   monedaActual: Moneda;
   monedaDestino?: Moneda; // Por defecto ARS
+  gastos: Gasto[];
 }
 
 export function ResumenConversion({
   estadisticas,
   monedaActual,
-  monedaDestino
+  monedaDestino,
+  gastos,
 }: ResumenConversionProps) {
   const [conversiones, setConversiones] = useState<{
     total?: number;
@@ -32,26 +34,43 @@ export function ResumenConversion({
 
   useEffect(() => {
     const calcularConversiones = async () => {
-      if (monedaActual.codigo === destino.codigo) {
-        setConversiones({
-          total: estadisticas.totalGastos,
-          mes: estadisticas.gastoDelMes,
-          dia: estadisticas.gastoDelDia,
-        });
-        setTasaCambio(1);
-        return;
-      }
-
       setCargando(true);
       try {
-        // Calcular tasa de cambio
+        const hoy = new Date();
+        const hoyISO = hoy.toISOString().split('T')[0];
+        const mesActual = hoy.getMonth();
+        const añoActual = hoy.getFullYear();
+
+        let total = 0;
+        let mes = 0;
+        let dia = 0;
+
+        for (const g of gastos) {
+          const monedaOrigen = g.moneda || 'ARS';
+          const montoConvertido = await convertirDirecto(
+            g.monto,
+            monedaOrigen,
+            destino.codigo
+          );
+
+          total += montoConvertido;
+
+          const fechaGasto = new Date(g.fecha);
+          if (
+            fechaGasto.getMonth() === mesActual &&
+            fechaGasto.getFullYear() === añoActual
+          ) {
+            mes += montoConvertido;
+          }
+
+          if (g.fecha === hoyISO) {
+            dia += montoConvertido;
+          }
+        }
+
+        // Calcular tasa aproximada tomando como referencia 1 unidad de la moneda actual
         const tasa = await convertirDirecto(1, monedaActual.codigo, destino.codigo);
         setTasaCambio(tasa);
-
-        // Convertir todos los montos
-        const total = await convertirDirecto(estadisticas.totalGastos, monedaActual.codigo, destino.codigo);
-        const mes = await convertirDirecto(estadisticas.gastoDelMes, monedaActual.codigo, destino.codigo);
-        const dia = await convertirDirecto(estadisticas.gastoDelDia, monedaActual.codigo, destino.codigo);
 
         setConversiones({ total, mes, dia });
       } catch (error) {
@@ -62,18 +81,7 @@ export function ResumenConversion({
     };
 
     calcularConversiones();
-  }, [
-    estadisticas.totalGastos,
-    estadisticas.gastoDelMes,
-    estadisticas.gastoDelDia,
-    monedaActual.codigo,
-    destino.codigo,
-    convertirDirecto
-  ]);
-
-  if (monedaActual.codigo === destino.codigo) {
-    return null;
-  }
+  }, [gastos, monedaActual.codigo, destino.codigo, convertirDirecto, estadisticas.totalGastos, estadisticas.gastoDelMes, estadisticas.gastoDelDia]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-green-500">

@@ -120,39 +120,50 @@ Ejecuta la app de escritorio en modo desarrollo, conectándose al servidor de de
 
 ## Despliegue en GitHub Pages
 
-**⚠️ IMPORTANTE**: Para que Firebase funcione en GitHub Pages, debes configurar los secrets de Firebase en GitHub (Settings → Secrets and variables → Actions).
+**⚠️ IMPORTANTE**: Para que la app funcione en GitHub Pages (login y datos en la nube), debes configurar los **secrets de Firebase** en el repositorio.
 
-### Configuración Inicial
+### Secrets necesarios
+
+En **Settings → Secrets and variables → Actions** del repo, crea estos secrets con los mismos valores que tenés en tu `.env` local:
+
+| Secret | Descripción |
+|--------|-------------|
+| `VITE_FIREBASE_API_KEY` | API Key de Firebase |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Auth domain (ej: `tu-proyecto.firebaseapp.com`) |
+| `VITE_FIREBASE_PROJECT_ID` | ID del proyecto |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Storage bucket |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Messaging Sender ID |
+| `VITE_FIREBASE_APP_ID` | App ID |
+
+Sin estos secrets, la build se hace igual pero la app en GitHub Pages no podrá conectar con Firebase (los usuarios podrían usar solo modo local).
+
+### Configuración inicial
 
 1. **Haz tu repositorio público** (necesario para GitHub Pages gratuito):
    - Ve a `Settings` → `General`
-   - Desplázate hasta la sección "Danger Zone" al final
-   - Haz clic en "Change repository visibility"
-   - Selecciona "Make public" y confirma
-   
-   ⚠️ **Nota**: GitHub Pages gratuito solo funciona con repositorios públicos. Si necesitas mantenerlo privado, considera usar GitHub Enterprise (de pago) u otra plataforma como Vercel/Netlify.
+   - Desplázate hasta "Danger Zone" y cambia la visibilidad a **Public**
 
 2. **Habilita GitHub Pages**:
-   - Ve a `Settings` → `Pages` en tu repositorio de GitHub
-   - En `Source`, selecciona `GitHub Actions` (NO "Branch")
-   - Guarda los cambios
+   - Ve a `Settings` → `Pages`
+   - En **Source** elegí **GitHub Actions** (no "Branch")
+   - Guarda
 
-3. **Haz push de tu código**:
+3. **Subí el código y hacé push**:
    ```bash
    git add .
-   git commit -m "Configurar para GitHub Pages"
+   git commit -m "Subir a GitHub Pages"
    git push origin main
    ```
 
-4. **El workflow se ejecutará automáticamente**:
-   - Ve a la pestaña `Actions` en tu repositorio
-   - Verás el workflow "Deploy to GitHub Pages" ejecutándose
-   - Una vez completado, tu sitio estará disponible en:
-     `https://[tu-usuario].github.io/[nombre-del-repo]/`
+4. **Revisá el despliegue**:
+   - En la pestaña **Actions** se ejecuta el workflow "Deploy to GitHub Pages"
+   - Cuando termine, la app queda en:  
+     **`https://[tu-usuario].github.io/[nombre-del-repo]/`**  
+     (ej: si el repo se llama `Finanzapp`, la URL es `https://tuusuario.github.io/Finanzapp/`)
 
-### Actualización Automática
+### Actualizaciones
 
-Cada vez que hagas `git push` a la rama `main`, el sitio se actualizará automáticamente en 2-3 minutos.
+Cada vez que hagas `git push` a `main`, el sitio se vuelve a construir y se actualiza en 1–2 minutos.
 
 ## Uso
 

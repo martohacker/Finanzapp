@@ -19,9 +19,9 @@ export function GastosChart({ estadisticas, moneda }: GastosChartProps) {
 
   if (datosGrafico.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8 text-center">
-        <p className="text-gray-500">No hay datos para mostrar en el gráfico</p>
-        <p className="text-gray-400 text-sm mt-2">Agrega algunos gastos para ver las estadísticas visuales</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-none dark:border dark:border-slate-700 p-8 text-center">
+        <p className="text-gray-500 dark:text-slate-400">No hay datos para mostrar en el gráfico</p>
+        <p className="text-gray-400 dark:text-slate-500 text-sm mt-2">Agrega algunos gastos para ver las estadísticas visuales</p>
       </div>
     );
   }
@@ -48,13 +48,13 @@ export function GastosChart({ estadisticas, moneda }: GastosChartProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">Gráficos de Gastos</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md dark:shadow-none dark:border dark:border-slate-700 p-4 sm:p-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4 sm:mb-6">Gráficos de Gastos</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de Pastel */}
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4">Gastos por Categoría</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-slate-300 mb-3 sm:mb-4">Gastos por Categoría</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -83,7 +83,7 @@ export function GastosChart({ estadisticas, moneda }: GastosChartProps) {
 
         {/* Gráfico de Barras */}
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-3 sm:mb-4">Comparativa por Categoría</h3>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-slate-300 mb-3 sm:mb-4">Comparativa por Categoría</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={datosGrafico}>
               <CartesianGrid strokeDasharray="3 3" />

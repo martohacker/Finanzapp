@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 // Configuración de Firebase
 // ⚠️ IMPORTANTE: Reemplaza con tus credenciales de Firebase
@@ -23,25 +23,44 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDoma
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
-    console.log('✅ Firebase inicializado correctamente');
-    console.log('📍 Entorno:', {
-      esProduccion: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
-      hostname: window.location.hostname,
-      url: window.location.origin,
+
+    // Persistencia de auth: mantiene la sesión al cerrar/recargar el navegador
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn('⚠️ No se pudo activar persistencia de auth:', err?.message);
     });
+
+    // Cache offline de Firestore: permite leer datos sin red y sincronizar después
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err?.code === 'failed-precondition') {
+        console.warn('⚠️ Persistencia Firestore: ya está abierta en otra pestaña.');
+      } else {
+        console.warn('⚠️ Persistencia Firestore desactivada:', err?.message);
+      }
+    });
+
+    if (import.meta.env?.DEV) {
+      console.log('✅ Firebase inicializado correctamente');
+      console.log('📍 Entorno:', {
+        esProduccion: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+        hostname: window.location.hostname,
+        url: window.location.origin,
+      });
+    }
   } catch (error) {
     console.error('❌ Error al inicializar Firebase:', error);
   }
 } else {
-  console.warn('⚠️ Firebase no está configurado. Variables faltantes:', {
-    apiKey: !firebaseConfig.apiKey ? 'FALTA' : `OK (${firebaseConfig.apiKey.substring(0, 10)}...)`,
-    authDomain: !firebaseConfig.authDomain ? 'FALTA' : `OK (${firebaseConfig.authDomain})`,
-    projectId: !firebaseConfig.projectId ? 'FALTA' : `OK (${firebaseConfig.projectId})`,
-    storageBucket: !firebaseConfig.storageBucket ? 'FALTA' : 'OK',
-    messagingSenderId: !firebaseConfig.messagingSenderId ? 'FALTA' : 'OK',
-    appId: !firebaseConfig.appId ? 'FALTA' : 'OK',
-  });
-  console.warn('⚠️ Usando localStorage como fallback.');
+  if (import.meta.env?.DEV) {
+    console.warn('⚠️ Firebase no está configurado. Variables faltantes:', {
+      apiKey: !firebaseConfig.apiKey ? 'FALTA' : `OK (${firebaseConfig.apiKey.substring(0, 10)}...)`,
+      authDomain: !firebaseConfig.authDomain ? 'FALTA' : `OK (${firebaseConfig.authDomain})`,
+      projectId: !firebaseConfig.projectId ? 'FALTA' : `OK (${firebaseConfig.projectId})`,
+      storageBucket: !firebaseConfig.storageBucket ? 'FALTA' : 'OK',
+      messagingSenderId: !firebaseConfig.messagingSenderId ? 'FALTA' : 'OK',
+      appId: !firebaseConfig.appId ? 'FALTA' : 'OK',
+    });
+    console.warn('⚠️ Usando localStorage como fallback.');
+  }
 }
 
 export { app, auth, db };

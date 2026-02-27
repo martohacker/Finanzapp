@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -18,6 +19,12 @@ export default {
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
+        },
+        // Superficies para dark mode (más suave que gray-900)
+        surface: {
+          dark: '#1e293b',   // slate-800
+          darker: '#0f172a', // slate-900
+          border: '#334155',  // slate-700
         },
       },
     },

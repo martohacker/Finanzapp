@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useState, useEffect } from 'react';
 import { 
   collection, 
@@ -9,16 +10,31 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
+=======
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+>>>>>>> Stashed changes
   doc,
-  Timestamp
+  onSnapshot,
+  Timestamp,
+  Query,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db, auth, isFirebaseConfigured } from '../services/firebase';
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
 
-const obtenerStorageKey = (userId: string | null) => 
+const obtenerStorageKey = (userId: string | null) =>
   userId ? `finanzapp-gastos-${userId}` : 'finanzapp-gastos-temp';
 
+<<<<<<< Updated upstream
 // Función para sincronizar gastos en segundo plano sin bloquear la UI
 async function sincronizarGastosEnSegundoPlano(
   gastosLocal: Gasto[], 
@@ -439,72 +455,100 @@ service cloud.firestore {
       console.error('📋 SOLUCIÓN URGENTE: Ve a Firebase Console → Firestore Database → Rules');
       alert('❌ Error de permisos en Firebase\n\nLas reglas de Firestore están bloqueando la escritura.\n\nRevisa la consola para ver las instrucciones detalladas.');
     }
+=======
+function docToGasto(id: string, data: Record<string, unknown>): Gasto {
+  return {
+    id,
+    descripcion: (data.descripcion as string) ?? '',
+    monto:
+      typeof data.monto === 'number'
+        ? (data.monto as number)
+        : Number(data.monto ?? 0) || 0,
+    categoria: (data.categoria as string) ?? 'otros',
+    fecha: (data.fecha as string) ?? '',
+    moneda: (data.moneda as string) || 'ARS',
+  };
+}
+
+/** Construye la query de gastos del usuario, con fallback sin orderBy si falta índice */
+function buildGastosQuery(userId: string): Query | null {
+  if (!db) return null;
+  const gastosRef = collection(db, 'gastos');
+  try {
+    return query(
+      gastosRef,
+      where('user_id', '==', userId),
+      orderBy('fecha', 'desc')
+    );
+  } catch {
+    return query(gastosRef, where('user_id', '==', userId));
+>>>>>>> Stashed changes
   }
 }
 
 export function useGastosFirebase(userId: string | null, usandoFirebase: boolean) {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [errorFirebase, setErrorFirebase] = useState<string | null>(null);
+  const unsubscribeRef = useRef<Unsubscribe | null>(null);
 
-  // Cargar gastos desde Firebase o localStorage
+  const guardarEnLocalStorage = useCallback(
+    (gastosToSave?: Gasto[]) => {
+      if (!userId) return;
+      const list = gastosToSave ?? gastos;
+      localStorage.setItem(obtenerStorageKey(userId), JSON.stringify(list));
+    },
+    [userId, gastos]
+  );
+
+  // Sincronizar gastos locales a Firebase (solo cuando Firebase está vacío y hay datos locales)
+  const sincronizarLocalesAFirebase = useCallback(
+    async (_gastosLocal: Gasto[]) => {
+      // Sincronización desactivada para evitar datos corruptos desde localStorage
+      return;
+    },
+    []
+  );
+
+  // Suscripción en tiempo real a Firestore o carga desde localStorage
   useEffect(() => {
     if (!userId) {
       setGastos([]);
       setCargando(false);
+      setErrorFirebase(null);
       return;
     }
 
-    const cargarGastos = async () => {
-      setCargando(true);
-      
-      if (usandoFirebase && isFirebaseConfigured() && db) {
-        // Cargar desde Firebase
-        console.log('📥 Intentando cargar gastos desde Firebase para userId:', userId);
-        try {
-          const gastosRef = collection(db, 'gastos');
-          
-          // Intentar primero con orderBy (requiere índice compuesto)
-          let querySnapshot;
+    const storageKey = obtenerStorageKey(userId);
+
+    if (usandoFirebase && isFirebaseConfigured() && db) {
+      const q = buildGastosQuery(userId);
+      if (!q) {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
           try {
-            const q = query(
-              gastosRef,
-              where('user_id', '==', userId),
-              orderBy('fecha', 'desc')
-            );
-            querySnapshot = await getDocs(q);
-            console.log('✅ Query con orderBy exitosa');
-          } catch (orderByError: any) {
-            // Si falla con orderBy, intentar sin orderBy y ordenar en el cliente
-            console.warn('⚠️ Query con orderBy falló, intentando sin orderBy:', orderByError?.code);
-            const q = query(
-              gastosRef,
-              where('user_id', '==', userId)
-            );
-            querySnapshot = await getDocs(q);
-            console.log('✅ Query sin orderBy exitosa (ordenando en cliente)');
-          }
+            setGastos(JSON.parse(stored));
+          } catch { /* noop */ }
+        }
+        setCargando(false);
+        return;
+      }
 
-          const gastosConvertidos: Gasto[] = [];
+      setCargando(true);
+      setErrorFirebase(null);
 
-          querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            gastosConvertidos.push({
-              id: docSnap.id,
-              descripcion: data.descripcion,
-              monto: data.monto,
-              categoria: data.categoria,
-              fecha: data.fecha,
-              moneda: data.moneda || 'ARS', // Por defecto ARS si no existe
-            });
+      unsubscribeRef.current = onSnapshot(
+        q,
+        (snapshot) => {
+          const list: Gasto[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as Record<string, unknown>;
+            list.push(docToGasto(docSnap.id, data));
           });
-
-          // Ordenar por fecha descendente si no se ordenó en la query
-          if (gastosConvertidos.length > 0) {
-            gastosConvertidos.sort((a, b) => {
-              // Comparar fechas en formato ISO (YYYY-MM-DD)
-              return b.fecha.localeCompare(a.fecha);
-            });
+          if (list.length > 0) {
+            list.sort((a, b) => b.fecha.localeCompare(a.fecha));
           }
+<<<<<<< Updated upstream
 
           console.log(`✅ Cargados ${gastosConvertidos.length} gastos desde Firebase`);
           
@@ -582,84 +626,120 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
         setCargando(false);
       }
     };
-
-    const cargarDesdeLocalStorage = () => {
-      const storageKey = obtenerStorageKey(userId);
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        try {
-          setGastos(JSON.parse(stored));
-        } catch (error) {
-          console.error('Error al cargar gastos:', error);
-          setGastos([]);
+=======
+          setGastos(list);
+          setCargando(false);
+          if (list.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(list));
+          } else {
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+              try {
+                const local = JSON.parse(stored) as Gasto[];
+                if (local?.length > 0) {
+                  sincronizarLocalesAFirebase(local);
+                }
+              } catch {
+                // ignore
+              }
+            }
+          }
+        },
+        (err: { code?: string; message?: string }) => {
+          setCargando(false);
+          setErrorFirebase(err?.message ?? 'Error al conectar con Firebase');
+          if (err?.code === 'failed-precondition' || err?.message?.includes('index')) {
+            setErrorFirebase('Falta crear un índice en Firestore (ver consola)');
+          }
+          // Fallback a localStorage
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            try {
+              setGastos(JSON.parse(stored));
+            } catch {
+              setGastos([]);
+            }
+          } else {
+            setGastos([]);
+          }
+          // Si hay datos en localStorage y Firebase devolvió 0 antes del error, intentar sync
+          const storedRaw = localStorage.getItem(storageKey);
+          if (storedRaw) {
+            try {
+              const local = JSON.parse(storedRaw) as Gasto[];
+              if (local?.length > 0) {
+                sincronizarLocalesAFirebase(local);
+              }
+            } catch {
+              // ignore
+            }
+          }
         }
-      } else {
+      );
+>>>>>>> Stashed changes
+
+      return () => {
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
+      };
+    }
+
+    // Sin Firebase: cargar solo desde localStorage
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        setGastos(JSON.parse(stored));
+      } catch {
         setGastos([]);
       }
-    };
+    } else {
+      setGastos([]);
+    }
+    setCargando(false);
+    setErrorFirebase(null);
+    return undefined;
+  }, [userId, usandoFirebase, sincronizarLocalesAFirebase]);
 
-    cargarGastos();
-  }, [userId, usandoFirebase]);
+  // Backup en localStorage cuando cambian los gastos (solo si no estamos usando listener)
+  useEffect(() => {
+    if (!userId || !usandoFirebase || !isFirebaseConfigured()) {
+      if (userId && gastos.length > 0) {
+        guardarEnLocalStorage(gastos);
+      }
+    }
+  }, [gastos, userId, usandoFirebase, guardarEnLocalStorage]);
 
-  // Guardar en Firebase cuando cambien
-  const guardarGasto = async (gasto: Gasto, esNuevo: boolean) => {
-    console.log('🔍 guardarGasto llamado:', {
-      usandoFirebase,
-      isFirebaseConfigured: isFirebaseConfigured(),
-      tieneDb: !!db,
-      tieneUserId: !!userId,
-      esNuevo,
-    });
+  const guardarGasto = useCallback(
+    async (gasto: Gasto, esNuevo: boolean, listaActual: Gasto[]) => {
+      if (!usandoFirebase || !isFirebaseConfigured() || !db || !userId) {
+        guardarEnLocalStorage(listaActual);
+        return;
+      }
 
-    if (usandoFirebase && isFirebaseConfigured() && db && userId) {
+      const currentUser = auth?.currentUser;
+      if (!currentUser || currentUser.uid !== userId) {
+        guardarEnLocalStorage(listaActual);
+        return;
+      }
+
       try {
-        // Verificar autenticación antes de escribir
-        if (auth) {
-          const currentUser = auth.currentUser;
-          if (!currentUser) {
-            console.error('❌ No hay usuario autenticado en Firebase');
-            console.error('💡 El usuario debe estar autenticado para escribir en Firestore');
-            guardarEnLocalStorage();
-            return;
-          }
-          if (currentUser.uid !== userId) {
-            console.error('❌ El userId no coincide con el usuario autenticado');
-            console.error('   userId proporcionado:', userId);
-            console.error('   auth.currentUser.uid:', currentUser.uid);
-            guardarEnLocalStorage();
-            return;
-          }
-          console.log('✅ Usuario autenticado correctamente:', {
-            uid: currentUser.uid,
-            email: currentUser.email,
-          });
-        }
-        
         const gastosRef = collection(db, 'gastos');
-        
         if (esNuevo) {
-          // Insertar nuevo gasto
-          console.log('💾 Guardando nuevo gasto en Firebase:', {
-            descripcion: gasto.descripcion,
-            monto: gasto.monto,
-            categoria: gasto.categoria,
-            fecha: gasto.fecha,
-            moneda: gasto.moneda || 'ARS',
-            userId: userId,
-          });
-          const docRef = await addDoc(gastosRef, {
+          await addDoc(gastosRef, {
             user_id: userId,
             descripcion: gasto.descripcion,
             monto: gasto.monto,
             categoria: gasto.categoria,
             fecha: gasto.fecha,
-            moneda: gasto.moneda || 'ARS', // Por defecto ARS
+            moneda: gasto.moneda || 'ARS',
             created_at: Timestamp.now(),
             updated_at: Timestamp.now(),
           });
-          console.log('✅ Gasto guardado en Firebase con ID:', docRef.id);
-          console.log('📋 Verifica en Firebase Console → Firestore → Data → gastos que el documento se haya creado correctamente.');
+          // onSnapshot actualizará el estado con el nuevo documento e id real
         } else {
+<<<<<<< Updated upstream
           // Actualizar gasto existente - pero primero verificar si existe
           console.log('💾 Intentando actualizar gasto en Firebase:', gasto.id);
           
@@ -743,25 +823,66 @@ service cloud.firestore {
         alert(`❌ Error al guardar en Firebase: ${error?.code || error?.message || 'Error desconocido'}\n\nRevisa la consola para más detalles.`);
         
         guardarEnLocalStorage();
+=======
+          const gastoRef = doc(db, 'gastos', gasto.id);
+          await updateDoc(gastoRef, {
+            descripcion: gasto.descripcion,
+            monto: gasto.monto,
+            categoria: gasto.categoria,
+            fecha: gasto.fecha,
+            moneda: gasto.moneda || 'ARS',
+            updated_at: Timestamp.now(),
+          });
+        }
+        setErrorFirebase(null);
+      } catch (error: unknown) {
+        const err = error as { code?: string; message?: string };
+        setErrorFirebase(err?.message ?? 'Error al guardar');
+        guardarEnLocalStorage(listaActual);
       }
-    } else {
-      console.warn('⚠️ No se usa Firebase. Razones:', {
-        usandoFirebase,
-        isFirebaseConfigured: isFirebaseConfigured(),
-        tieneDb: !!db,
-        tieneUserId: !!userId,
-      });
-      guardarEnLocalStorage();
-    }
-  };
+    },
+    [usandoFirebase, userId, guardarEnLocalStorage]
+  );
 
-  const guardarEnLocalStorage = () => {
-    if (userId) {
-      const storageKey = obtenerStorageKey(userId);
-      localStorage.setItem(storageKey, JSON.stringify(gastos));
-    }
-  };
+  const agregarGasto = useCallback(
+    async (gasto: Omit<Gasto, 'id'>) => {
+      const nuevoGasto: Gasto = {
+        ...gasto,
+        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+      const listaConNuevo = [nuevoGasto, ...gastos];
+      setGastos(listaConNuevo);
+      await guardarGasto(nuevoGasto, true, listaConNuevo);
+    },
+    [gastos, guardarGasto]
+  );
 
+  const eliminarGasto = useCallback(
+    async (id: string) => {
+      if (usandoFirebase && isFirebaseConfigured() && db && userId) {
+        try {
+          await deleteDoc(doc(db, 'gastos', id));
+        } catch {
+          // Si falla (ej. ya borrado), igual quitamos del estado local
+        }
+>>>>>>> Stashed changes
+      }
+      setGastos((prev) => prev.filter((g) => g.id !== id));
+    },
+    [usandoFirebase, userId]
+  );
+
+  const editarGasto = useCallback(
+    async (id: string, gastoActualizado: Omit<Gasto, 'id'>) => {
+      const gastoEditado: Gasto = { ...gastoActualizado, id };
+      const listaActual = gastos.map((g) => (g.id === id ? gastoEditado : g));
+      setGastos(listaActual);
+      await guardarGasto(gastoEditado, false, listaActual);
+    },
+    [gastos, guardarGasto]
+  );
+
+<<<<<<< Updated upstream
   // Guardar en localStorage también como backup
   useEffect(() => {
     if (userId && gastos.length > 0) {
@@ -863,13 +984,16 @@ service cloud.firestore {
   };
 
   const calcularEstadisticas = (): Estadisticas => {
+=======
+  const calcularEstadisticas = useCallback((): Estadisticas => {
+>>>>>>> Stashed changes
     const ahora = new Date();
     const fechaActual = ahora.toISOString().split('T')[0];
     const mesActual = ahora.getMonth();
     const añoActual = ahora.getFullYear();
 
-    const gastosDelDia = gastos.filter(g => g.fecha === fechaActual);
-    const gastosDelMes = gastos.filter(g => {
+    const gastosDelDia = gastos.filter((g) => g.fecha === fechaActual);
+    const gastosDelMes = gastos.filter((g) => {
       const fechaGasto = new Date(g.fecha);
       return fechaGasto.getMonth() === mesActual && fechaGasto.getFullYear() === añoActual;
     });
@@ -881,15 +1005,22 @@ service cloud.firestore {
     const diasDelMes = ahora.getDate();
     const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
 
-    const diasTotal = gastos.length > 0 
-      ? Math.max(1, Math.ceil((ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) / (1000 * 60 * 60 * 24)))
-      : 1;
+    const diasTotal =
+      gastos.length > 0
+        ? Math.max(
+            1,
+            Math.ceil(
+              (ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) /
+                (1000 * 60 * 60 * 24)
+            )
+          )
+        : 1;
     const promedioMensual = (totalGastos / diasTotal) * 30;
 
     const gastoPorCategoria: Record<string, number> = {};
-    CATEGORIAS.forEach(cat => {
+    CATEGORIAS.forEach((cat) => {
       gastoPorCategoria[cat.id] = gastos
-        .filter(g => g.categoria === cat.id)
+        .filter((g) => g.categoria === cat.id)
         .reduce((sum, g) => sum + g.monto, 0);
     });
 
@@ -901,15 +1032,15 @@ service cloud.firestore {
       gastoDelMes,
       gastoDelDia,
     };
-  };
+  }, [gastos]);
 
   return {
     gastos,
     cargando,
+    errorFirebase,
     agregarGasto,
     eliminarGasto,
     editarGasto,
     calcularEstadisticas,
   };
 }
-
