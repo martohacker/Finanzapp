@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  getDocs,
   Timestamp,
   Query,
   Unsubscribe,
@@ -32,6 +33,13 @@ function docToGasto(id: string, data: Record<string, unknown>): Gasto {
     fecha: (data.fecha as string) ?? '',
     moneda: (data.moneda as string) || 'ARS',
   };
+}
+
+/** Query simple sin orderBy (no requiere índice compuesto); útil para getDocs de fallback */
+function buildGastosQuerySimple(userId: string): Query | null {
+  if (!db) return null;
+  const gastosRef = collection(db, 'gastos');
+  return query(gastosRef, where('user_id', '==', userId));
 }
 
 /** Construye la query de gastos del usuario, con fallback sin orderBy si falta índice */
@@ -150,7 +158,26 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           if (err?.code === 'failed-precondition' || err?.message?.includes('index')) {
             setErrorFirebase('Falta crear un índice en Firestore (ver consola)');
           }
-          // Fallback a localStorage
+          // Fallback 1: intentar una lectura única con getDocs (sin orderBy, no depende del índice)
+          const qSimple = buildGastosQuerySimple(userId);
+          if (qSimple) {
+            getDocs(qSimple)
+              .then((snapshot) => {
+                const list: Gasto[] = [];
+                snapshot.forEach((docSnap) => {
+                  const data = docSnap.data() as Record<string, unknown>;
+                  list.push(docToGasto(docSnap.id, data));
+                });
+                if (list.length > 0) {
+                  list.sort((a, b) => b.fecha.localeCompare(a.fecha));
+                  setGastos(list);
+                  setErrorFirebase(null);
+                  localStorage.setItem(storageKey, JSON.stringify(list));
+                }
+              })
+              .catch(() => { /* getDocs también falló, usar localStorage abajo */ });
+          }
+          // Fallback 2: localStorage
           const stored = localStorage.getItem(storageKey);
           if (stored) {
             try {
