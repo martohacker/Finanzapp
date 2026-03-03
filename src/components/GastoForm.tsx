@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
 import { MONEDAS, MONEDA_DEFAULT } from '../constants/monedas';
-import { Plus, ChevronDown, ChevronUp, Calendar, Wallet } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Calendar, Wallet, Mic } from 'lucide-react';
+import { parseFraseGasto } from '../utils/parseFraseGasto';
 
 interface GastoFormProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
@@ -16,6 +17,7 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [moneda, setMoneda] = useState(monedaActual);
   const [masOpciones, setMasOpciones] = useState(false);
+  const [grabando, setGrabando] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +41,63 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
   const inputBase =
     'border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-sm';
 
+  const manejarDictadoDescripcion = () => {
+    if (grabando) return;
+
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Tu navegador no soporta dictado por voz.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      setGrabando(true);
+
+      recognition.onresult = (event: any) => {
+        const texto = event.results?.[0]?.[0]?.transcript ?? '';
+        if (!texto) return;
+
+        const parsed = parseFraseGasto(texto, moneda, fecha);
+
+        setDescripcion((prev) =>
+          prev ? `${prev} ${parsed.descripcion}` : parsed.descripcion,
+        );
+
+        if (parsed.monto && !monto) {
+          setMonto(parsed.monto.toString());
+        }
+
+        if (parsed.categoriaId) {
+          setCategoria(parsed.categoriaId);
+        }
+
+        if (parsed.fecha) {
+          setFecha(parsed.fecha);
+        }
+      };
+
+      recognition.onerror = () => {
+        setGrabando(false);
+      };
+
+      recognition.onend = () => {
+        setGrabando(false);
+      };
+
+      recognition.start();
+    } catch {
+      setGrabando(false);
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -48,14 +107,25 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
       <div className="p-4 space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 min-w-0">
-            <input
-              type="text"
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="¿En qué gastaste?"
-              className={`w-full px-4 py-3 ${inputBase} placeholder:text-gray-400 dark:placeholder:text-slate-500`}
-              required
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                placeholder="¿En qué gastaste?"
+                className={`w-full px-4 py-3 pr-11 ${inputBase} placeholder:text-gray-400 dark:placeholder:text-slate-500`}
+                required
+              />
+              <button
+                type="button"
+                onClick={manejarDictadoDescripcion}
+                disabled={grabando}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-600 disabled:opacity-50"
+                title="Dictar descripción por voz"
+              >
+                <Mic size={18} />
+              </button>
+            </div>
           </div>
           <div className="flex gap-2 flex-wrap sm:flex-nowrap">
             <div className="w-24 sm:w-28">

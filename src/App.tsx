@@ -286,26 +286,20 @@ function App() {
         {/* Sección: Gastos */}
         {seccionActiva === 'gastos' && (
           <div className="space-y-6">
+            <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
             <FiltrosGastos
               filtros={filtrosGastos}
               onChange={setFiltrosGastos}
               onClear={() => setFiltrosGastos(emptyFiltros())}
               resultadosCount={gastosFiltrados.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
-                <GastoForm onAgregarGasto={agregarGasto} monedaActual={monedaActual.codigo} />
-              </div>
-              <div className="lg:col-span-2">
-                <GastoList 
-                  gastos={gastosFiltrados} 
-                  onEliminarGasto={eliminarGasto} 
-                  onEditarGasto={editarGasto}
-                  onRepetirGasto={agregarGasto}
-                  moneda={monedaActual} 
-                />
-              </div>
-            </div>
+            <GastoList
+              gastos={gastosFiltrados}
+              onEliminarGasto={eliminarGasto}
+              onEditarGasto={editarGasto}
+              onRepetirGasto={agregarGasto}
+              moneda={monedaActual}
+            />
           </div>
         )}
 

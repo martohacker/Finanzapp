@@ -20,6 +20,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - ✅ Interfaz moderna y completamente responsive
 - ✅ **Instalable como PWA** - Puedes instalarla en tu dispositivo
 - ✅ **App de escritorio** - Instalador para Windows (.exe), Mac (.dmg) y Linux (.AppImage)
+- ✅ **App Store y Play Store** - Misma app empaquetada con Capacitor para publicar en tiendas
 - ✅ **Base de datos en la nube (opcional)** - Configura Firebase o Supabase para sincronización entre dispositivos
 
 ## Tecnologías
@@ -32,6 +33,7 @@ Una aplicación moderna para controlar tus finanzas personales, gestionar gastos
 - Lucide React (iconos)
 - PWA (Progressive Web App)
 - Electron (App de escritorio)
+- Capacitor (App Store y Play Store)
 
 ## Instalación Local
 
@@ -108,12 +110,89 @@ npm run electron:dev
 ```
 Ejecuta la app de escritorio en modo desarrollo, conectándose al servidor de desarrollo de Vite.
 
+## Publicar en App Store y Play Store
+
+Sí, es posible. La app está preparada para generar builds nativos con **Capacitor**: la misma app web se empaqueta como app para iOS y Android.
+
+### Requisitos
+
+| Tienda | Requisito | Coste |
+|--------|-----------|--------|
+| **Google Play** | Cuenta de [Google Play Console](https://play.google.com/console), Android Studio | 25 USD (una sola vez) |
+| **App Store** | Cuenta de [Apple Developer](https://developer.apple.com), **Mac con Xcode** | 99 USD/año |
+
+Para **iOS** necesitas sí o sí un Mac con Xcode; no se pueden generar builds de iOS en Windows.
+
+### Pasos generales
+
+1. **Instalar dependencias** (incluye Capacitor):
+   ```bash
+   npm install
+   ```
+
+2. **Generar la build web para móvil**:
+   ```bash
+   npm run build:capacitor
+   ```
+
+3. **Añadir las plataformas** (solo la primera vez):
+   ```bash
+   npx cap add android
+   npx cap add ios
+   ```
+   Se crearán las carpetas `android/` e `ios/` con los proyectos nativos.
+
+4. **Sincronizar el contenido** (cada vez que cambies la app web):
+   ```bash
+   npm run cap:sync
+   ```
+
+### Android (Play Store)
+
+1. Instala [Android Studio](https://developer.android.com/studio).
+2. Abre el proyecto Android:
+   ```bash
+   npm run cap:android
+   ```
+   (o abre la carpeta `android/` en Android Studio).
+3. En Android Studio: **Build → Generate Signed Bundle / APK** y crea un AAB (Android App Bundle) para subir a Play Console.
+4. En [Google Play Console](https://play.google.com/console) crea la app, sube el AAB, completa ficha, política de privacidad, etc., y envía a revisión.
+
+### iOS (App Store)
+
+1. Necesitas un **Mac** con [Xcode](https://developer.apple.com/xcode/) instalado.
+2. Abre el proyecto iOS:
+   ```bash
+   npm run cap:ios
+   ```
+   (o abre `ios/App/App.xcworkspace` en Xcode).
+3. En Xcode: configura tu **Team** (cuenta Apple Developer), **Bundle ID** (`com.finanzapp.app`), firma y dispositivos.
+4. **Product → Archive** para generar el archivo para App Store Connect.
+5. Sube el archivo desde Xcode a App Store Connect y completa la ficha de la app para enviar a revisión.
+
+### Comandos útiles
+
+- `npm run build:capacitor` — Build web con rutas para móvil.
+- `npm run cap:sync` — Copia la build a `android` e `ios` y sincroniza.
+- `npm run cap:android` — Abre el proyecto en Android Studio.
+- `npm run cap:ios` — Abre el proyecto en Xcode (solo en Mac).
+
+### Notas
+
+- **Iconos y splash**: Puedes personalizar iconos y pantalla de carga en `android/app/src/main/res/` e `ios/App/App/Assets.xcassets/`. Capacitor puede usar los iconos PWA que ya tienes en `public/`.
+- **Firebase**: La misma configuración de Firebase (variables de entorno o `google-services.json` / `GoogleService-Info.plist`) debe estar en los proyectos Android e iOS para que login y datos en la nube funcionen en las apps publicadas.
+- **Política de privacidad**: Ambas tiendas suelen pedir una URL de política de privacidad; puedes usar una página en GitHub Pages o tu propio sitio.
+
 ## Scripts
 
 - `npm run dev` - Inicia el servidor de desarrollo web
 - `npm run electron:dev` - Inicia la app de escritorio en modo desarrollo
 - `npm run build` - Construye la aplicación web para producción
 - `npm run build:electron` - Construye e instala la app de escritorio (genera .exe)
+- `npm run build:capacitor` - Construye la app web para móvil (App Store / Play Store)
+- `npm run cap:sync` - Sincroniza la build con los proyectos Android e iOS
+- `npm run cap:android` - Abre el proyecto en Android Studio
+- `npm run cap:ios` - Abre el proyecto en Xcode (solo en Mac)
 - `npm run preview` - Previsualiza la build de producción web
 - `npm run lint` - Ejecuta el linter
 - `npm run generate-icons` - Genera los iconos PWA

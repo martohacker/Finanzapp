@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
-// Para Electron, usar rutas relativas. Para web, usar el basePath configurado
+// Para Electron o Capacitor (móvil), usar rutas relativas. Para web, usar el basePath configurado
 const isElectron = process.env.ELECTRON === 'true';
-const basePath = isElectron ? './' : (process.env.VITE_BASE_PATH || '/');
+const isCapacitor = process.env.CAPACITOR === 'true';
+const basePath = isElectron || isCapacitor ? './' : (process.env.VITE_BASE_PATH || '/');
 
 export default defineConfig({
   plugins: [

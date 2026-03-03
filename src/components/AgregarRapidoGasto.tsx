@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
-import { Plus, X } from 'lucide-react';
+import { MONEDAS } from '../constants/monedas';
+import { Plus, X, Mic } from 'lucide-react';
+import { parseFraseGasto } from '../utils/parseFraseGasto';
 
 interface AgregarRapidoGastoProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
@@ -13,6 +15,8 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState(CATEGORIAS[0].id);
+  const [grabando, setGrabando] = useState(false);
+  const [moneda, setMoneda] = useState(monedaActual);
 
   const fechaHoy = new Date().toISOString().split('T')[0];
 
@@ -26,7 +30,7 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
       monto: valor,
       categoria,
       fecha: fechaHoy,
-      moneda: monedaActual,
+      moneda,
     });
 
     setDescripcion('');
@@ -39,6 +43,61 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
     setAbierto(false);
     setDescripcion('');
     setMonto('');
+    setCategoria(CATEGORIAS[0].id);
+    setMoneda(monedaActual);
+  };
+
+  const manejarDictadoDescripcion = () => {
+    if (grabando) return;
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Tu navegador no soporta dictado por voz.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'es-ES';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      setGrabando(true);
+
+      recognition.onresult = (event: any) => {
+        const texto = event.results?.[0]?.[0]?.transcript ?? '';
+        if (!texto) return;
+
+        const parsed = parseFraseGasto(texto, moneda, fechaHoy);
+
+        setDescripcion((prev) =>
+          prev ? `${prev} ${parsed.descripcion}` : parsed.descripcion,
+        );
+
+        if (parsed.monto && !monto) {
+          setMonto(parsed.monto.toString());
+        }
+
+        if (parsed.categoriaId) {
+          setCategoria(parsed.categoriaId);
+        }
+      };
+
+      recognition.onerror = () => {
+        setGrabando(false);
+      };
+
+      recognition.onend = () => {
+        setGrabando(false);
+      };
+
+      recognition.start();
+    } catch {
+      setGrabando(false);
+    }
   };
 
   return (
@@ -86,33 +145,63 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
                 <label htmlFor="rapido-desc" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Descripción
                 </label>
-                <input
-                  id="rapido-desc"
-                  type="text"
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  placeholder="Ej: Café, super..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    id="rapido-desc"
+                    type="text"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    placeholder="Ej: Café, super..."
+                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={manejarDictadoDescripcion}
+                    disabled={grabando}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-500 disabled:opacity-50"
+                    title="Dictar descripción por voz"
+                  >
+                    <Mic size={18} />
+                  </button>
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="rapido-monto" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Monto ({monedaActual})
-                </label>
-                <input
-                  id="rapido-monto"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={monto}
-                  onChange={(e) => setMonto(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                />
+              <div className="grid grid-cols-[1.5fr_1fr] gap-2">
+                <div>
+                  <label htmlFor="rapido-monto" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                    Monto
+                  </label>
+                  <input
+                    id="rapido-monto"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="rapido-moneda" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                    Moneda
+                  </label>
+                  <select
+                    id="rapido-moneda"
+                    value={moneda}
+                    onChange={(e) => setMoneda(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    {MONEDAS.map((m) => (
+                      <option key={m.codigo} value={m.codigo}>
+                        {m.simbolo} {m.codigo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
