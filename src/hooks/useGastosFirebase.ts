@@ -85,6 +85,19 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
 
   // Suscripción en tiempo real a Firestore o carga desde localStorage
   useEffect(() => {
+    // Log de diagnóstico para entender qué pasa en producción
+    try {
+      console.log('[useGastosFirebase] init efecto', {
+        userId,
+        usandoFirebase,
+        firebaseConfigurado: isFirebaseConfigured(),
+        tieneDB: !!db,
+        origen: window.location.origin,
+      });
+    } catch {
+      // ignore en entornos sin window/console
+    }
+
     if (!userId) {
       setGastos([]);
       setCargando(false);
@@ -126,6 +139,13 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
       unsubscribeRef.current = onSnapshot(
         q,
         (snapshot) => {
+          try {
+            console.log('[useGastosFirebase] snapshot recibido', {
+              size: snapshot.size,
+            });
+          } catch {
+            // ignore
+          }
           const list: Gasto[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data() as Record<string, unknown>;
@@ -153,6 +173,11 @@ export function useGastosFirebase(userId: string | null, usandoFirebase: boolean
           }
         },
         (err: { code?: string; message?: string }) => {
+          try {
+            console.error('[useGastosFirebase] error en onSnapshot', err);
+          } catch {
+            // ignore
+          }
           setCargando(false);
           setErrorFirebase(err?.message ?? 'Error al conectar con Firebase');
           if (err?.code === 'failed-precondition' || err?.message?.includes('index')) {
