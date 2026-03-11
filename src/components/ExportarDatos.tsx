@@ -6,13 +6,19 @@ interface ExportarDatosProps {
   gastos: Gasto[];
   usuarioId: string;
   usuarioNombre: string;
+  permitirImportar?: boolean;
 }
 
-export function ExportarDatos({ gastos, usuarioId, usuarioNombre }: ExportarDatosProps) {
+export function ExportarDatos({
+  gastos,
+  usuarioId,
+  usuarioNombre,
+  permitirImportar = true,
+}: ExportarDatosProps) {
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
 
-  const exportarDatos = () => {
+  const exportarJson = () => {
     try {
       const datos = {
         usuario: {
@@ -34,10 +40,53 @@ export function ExportarDatos({ gastos, usuarioId, usuarioNombre }: ExportarDato
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      setExito('Datos exportados exitosamente');
+      setExito('Backup JSON exportado exitosamente');
       setTimeout(() => setExito(null), 3000);
     } catch (err) {
       setError('Error al exportar datos');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
+  const exportarCsv = () => {
+    try {
+      if (!gastos.length) {
+        setError('No hay gastos para exportar.');
+        setTimeout(() => setError(null), 3000);
+        return;
+      }
+
+      const encabezados = ['Fecha', 'Descripción', 'Categoría', 'Monto', 'Moneda'];
+      const filas = gastos.map((g) => [
+        g.fecha,
+        g.descripcion.replace(/"/g, '""'),
+        g.categoria,
+        g.monto.toString().replace('.', ','),
+        g.moneda || 'ARS',
+      ]);
+
+      const lineas = [
+        encabezados.join(';'),
+        ...filas.map((cols) => cols.map((c) => `"${c}"`).join(';')),
+      ];
+
+      const contenido = '\ufeff' + lineas.join('\n');
+      const blob = new Blob([contenido], {
+        type: 'text/csv;charset=utf-8;',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `finanzapp-gastos-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setExito('Gastos exportados a CSV (compatible con Excel).');
+      setTimeout(() => setExito(null), 3000);
+    } catch {
+      setError('Error al exportar CSV.');
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -84,29 +133,39 @@ export function ExportarDatos({ gastos, usuarioId, usuarioNombre }: ExportarDato
           </div>
           <div>
             <h3 className="font-semibold text-gray-800">Exportar/Importar Datos</h3>
-            <p className="text-sm text-gray-600">Backup manual de tus gastos</p>
+            <p className="text-sm text-gray-600">Backup manual de tus gastos (JSON / CSV)</p>
           </div>
         </div>
 
         <div className="flex gap-2">
           <button
-            onClick={exportarDatos}
+            onClick={exportarJson}
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium"
           >
             <Download size={18} />
-            Exportar
+            Backup JSON
+          </button>
+
+          <button
+            onClick={exportarCsv}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <Download size={18} />
+            Exportar CSV
           </button>
           
-          <label className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium cursor-pointer">
-            <Upload size={18} />
-            Importar
-            <input
-              type="file"
-              accept=".json"
-              onChange={importarDatos}
-              className="hidden"
-            />
-          </label>
+          {permitirImportar && (
+            <label className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium cursor-pointer">
+              <Upload size={18} />
+              Importar
+              <input
+                type="file"
+                accept=".json"
+                onChange={importarDatos}
+                className="hidden"
+              />
+            </label>
+          )}
         </div>
       </div>
 

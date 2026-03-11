@@ -204,8 +204,7 @@ function App() {
               { id: 'resumen', label: 'Inicio', icon: Home },
               { id: 'gastos', label: 'Gastos', icon: FileText },
               { id: 'presupuesto', label: 'Presupuesto', icon: WalletCards },
-              // Solo mostramos "Datos" cuando no se usa Firebase (modo local)
-              ...(!usandoFirebase ? [{ id: 'datos', label: 'Datos', icon: Database }] : []),
+              { id: 'datos', label: 'Datos', icon: Database },
             ].map((tab) => {
               const Icon = tab.icon;
               const activo = seccionActiva === tab.id;
@@ -278,7 +277,7 @@ function App() {
             )}
 
             <div className="mb-8">
-              <GastosChart estadisticas={estadisticasMostrar} moneda={monedaActual} />
+              <GastosChart estadisticas={estadisticasMostrar} moneda={monedaActual} gastos={gastos} />
             </div>
           </>
         )}
@@ -343,12 +342,13 @@ function App() {
         )}
 
         {/* Sección: Exportar / Importar */}
-        {seccionActiva === 'datos' && !usandoFirebase && (
+        {seccionActiva === 'datos' && (
           <div className="mt-4">
             <ExportarDatos 
               gastos={gastos} 
               usuarioId={usuarioActual.id}
               usuarioNombre={usuarioActual.nombre}
+              permitirImportar={!usandoFirebase}
             />
           </div>
         )}

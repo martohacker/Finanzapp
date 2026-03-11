@@ -22,8 +22,10 @@
     "generate-icons": "node scripts/generate-pwa-icons.cjs"
   },
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/cli": "^8.1.0",
     "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0",
     "@supabase/supabase-js": "^2.78.0",
     "firebase": "^12.5.0",
     "lucide-react": "^0.294.0",

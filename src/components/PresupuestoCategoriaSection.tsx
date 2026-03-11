@@ -36,14 +36,32 @@ export function PresupuestoCategoriaSection({
           const gastado = gastoPorCategoria[cat.id] ?? 0;
           const limite = getLimite(cat.id);
           const sobrepasado = limite > 0 && gastado > limite;
+          const porcentaje = limite > 0 ? Math.min(gastado / limite, 2) : 0;
+          const cercaDelLimite = !sobrepasado && porcentaje >= 0.8;
           return (
             <div
               key={cat.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/30"
+              className="flex flex-col gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/30"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xl">{cat.icono}</span>
-                <span className="font-medium text-gray-800 dark:text-slate-200">{cat.nombre}</span>
+              <div className="flex items-center justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xl">{cat.icono}</span>
+                  <span className="font-medium text-gray-800 dark:text-slate-200">{cat.nombre}</span>
+                </div>
+                {limite > 0 && (
+                  <div className="flex items-center gap-2 text-xs">
+                    {sobrepasado && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200 font-medium">
+                        Superaste el límite
+                      </span>
+                    )}
+                    {cercaDelLimite && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 font-medium">
+                        Cerca del límite
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className={sobrepasado ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-600 dark:text-slate-400'}>
@@ -58,6 +76,20 @@ export function PresupuestoCategoriaSection({
                   </>
                 )}
               </div>
+              {limite > 0 && (
+                <div className="w-full h-2 rounded-full bg-gray-200 dark:bg-slate-600 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      sobrepasado
+                        ? 'bg-red-500'
+                        : porcentaje >= 0.8
+                        ? 'bg-amber-500'
+                        : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(porcentaje * 100, 100)}%` }}
+                  />
+                </div>
+              )}
               <div className="flex gap-2 sm:ml-auto">
                 <input
                   type="number"

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Gasto } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
 import { MONEDAS } from '../constants/monedas';
 import { Plus, X, Mic } from 'lucide-react';
 import { parseFraseGasto } from '../utils/parseFraseGasto';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 interface AgregarRapidoGastoProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
@@ -17,6 +19,7 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
   const [categoria, setCategoria] = useState(CATEGORIAS[0].id);
   const [grabando, setGrabando] = useState(false);
   const [moneda, setMoneda] = useState(monedaActual);
+  const inputDescRef = useRef<HTMLInputElement | null>(null);
 
   const fechaHoy = new Date().toISOString().split('T')[0];
 
@@ -47,20 +50,71 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
     setMoneda(monedaActual);
   };
 
-  const manejarDictadoDescripcion = () => {
+  const manejarDictadoDescripcion = async () => {
     if (grabando) return;
     if (typeof window === 'undefined') return;
 
-    const SpeechRecognition =
+    // Si estamos en app nativa (Capacitor: iOS / Android), usar plugin nativo
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const perm = await SpeechRecognition.checkPermissions();
+        if (perm.speechRecognition !== 'granted') {
+          const req = await SpeechRecognition.requestPermissions();
+          if (req.speechRecognition !== 'granted') {
+            alert('Necesito permiso de micrófono para usar el dictado.');
+            return;
+          }
+        }
+
+        setGrabando(true);
+
+        const { matches } = await SpeechRecognition.start({
+          language: 'es-ES',
+          maxResults: 1,
+          partialResults: false,
+        });
+
+        setGrabando(false);
+
+        const texto = matches?.[0] ?? '';
+        if (!texto) return;
+
+        const parsed = parseFraseGasto(texto, moneda, fechaHoy);
+
+        setDescripcion((prev) =>
+          prev ? `${prev} ${parsed.descripcion}` : parsed.descripcion,
+        );
+
+        if (parsed.monto && !monto) {
+          setMonto(parsed.monto.toString());
+        }
+
+        if (parsed.categoriaId) {
+          setCategoria(parsed.categoriaId);
+        }
+      } catch (error) {
+        console.error('Error en dictado nativo', error);
+        setGrabando(false);
+        alert('No se pudo iniciar el dictado por voz.');
+      }
+      return;
+    }
+
+    // Web: usar API de reconocimiento de voz del navegador (si existe)
+    const BrowserSpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      alert('Tu navegador no soporta dictado por voz.');
+    if (!BrowserSpeechRecognition) {
+      // Como último recurso, enfocar el input para que puedas usar el dictado del teclado
+      if (inputDescRef.current) {
+        inputDescRef.current.focus();
+      }
+      alert('Tu navegador no soporta dictado por voz directamente. Usa el micrófono del teclado.');
       return;
     }
 
     try {
-      const recognition = new SpeechRecognition();
+      const recognition = new BrowserSpeechRecognition();
       recognition.lang = 'es-ES';
       recognition.interimResults = false;
       recognition.maxAlternatives = 1;
@@ -97,6 +151,7 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
       recognition.start();
     } catch {
       setGrabando(false);
+      alert('No se pudo iniciar el dictado por voz.');
     }
   };
 
@@ -149,6 +204,7 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
                   <input
                     id="rapido-desc"
                     type="text"
+                    ref={inputDescRef}
                     value={descripcion}
                     onChange={(e) => setDescripcion(e.target.value)}
                     placeholder="Ej: Café, super..."
