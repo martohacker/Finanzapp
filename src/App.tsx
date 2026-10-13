@@ -31,7 +31,6 @@ import { usePresupuestoMensual } from './hooks/usePresupuestoMensual';
 import { useTheme } from './contexts/ThemeContext';
 import {
   filtrarGastosPorPeriodo,
-  calcularEstadisticasFromGastos,
   type PeriodoFiltro,
 } from './utils/estadisticas';
 import { Gasto } from './types';
@@ -53,7 +52,7 @@ function App() {
 
   const gastosEnPeriodo = useMemo(() => filtrarGastosPorPeriodo(gastos, periodo), [gastos, periodo]);
   const gastosMesActual = useMemo(() => filtrarGastosPorPeriodo(gastos, 'mes'), [gastos]);
-  const { estadisticasConvertidas, cargandoConvertidas, cotizacionNoDisponible } = useEstadisticasConvertidas(
+  const { estadisticasConvertidas, cargandoConvertidas } = useEstadisticasConvertidas(
     gastosEnPeriodo,
     monedaActual.codigo
   );
@@ -64,9 +63,9 @@ function App() {
     gastosMesActual,
     monedaActual.codigo
   );
-  const estadisticasPeriodo = useMemo(() => calcularEstadisticasFromGastos(gastosEnPeriodo), [gastosEnPeriodo]);
-  // Sin cotización no mostramos números: serían montos de distintas monedas sumados 1:1
-  const estadisticasMostrar = cotizacionNoDisponible ? null : estadisticasConvertidas || estadisticasPeriodo;
+  // null mientras carga la cotización o si no está disponible: nunca mostramos
+  // montos de distintas monedas sumados 1:1
+  const estadisticasMostrar = estadisticasConvertidas;
   const gastoPorCategoriaMes = cotizacionMesNoDisponible
     ? null
     : estadisticasMesConvertidas?.gastoPorCategoria ?? {};
@@ -108,6 +107,7 @@ function App() {
     restanteConvertido,
     porcentajeUsado,
     cotizacionNoDisponible: cotizacionPresupuestoNoDisponible,
+    cargandoCotizacion: cargandoCotizacionPresupuesto,
   } = usePresupuestoMensual({
     userId: usuarioActual?.id || null,
     monedaDestino: monedaActual.codigo,
@@ -198,8 +198,10 @@ function App() {
 
         {/* Recordatorios: presupuesto y vencimientos */}
         <Recordatorios
-          // Sin cotización el % usado no es confiable: no generamos avisos de presupuesto
-          presupuestoMonto={cotizacionPresupuestoNoDisponible ? 0 : presupuesto?.monto ?? 0}
+          // Sin cotización (o mientras carga) el % usado no es confiable: no avisamos
+          presupuestoMonto={
+            cotizacionPresupuestoNoDisponible || cargandoCotizacionPresupuesto ? 0 : presupuesto?.monto ?? 0
+          }
           porcentajeUsado={porcentajeUsado}
           restante={restanteConvertido}
           gastosFijos={gastosFijos}
@@ -246,13 +248,14 @@ function App() {
                 {estadisticasMostrar ? (
                   <Estadisticas estadisticas={estadisticasMostrar} moneda={monedaActual} />
                 ) : (
-                  <AvisoCotizacion />
+                  <AvisoCotizacion cargando={cargandoConvertidas} />
                 )}
               </div>
               <div className="lg:col-span-1 space-y-4">
                 <BalanceCard
                   totalIngresosMes={totalIngresosMes}
                   gastoDelMes={estadisticasMostrar?.gastoDelMes ?? null}
+                  cargandoCotizacion={cargandoConvertidas}
                   ingresos={ingresos}
                   moneda={monedaActual}
                   onAgregarIngreso={agregarIngreso}
@@ -264,6 +267,7 @@ function App() {
                   restante={restanteConvertido}
                   porcentajeUsado={porcentajeUsado}
                   cotizacionNoDisponible={cotizacionPresupuestoNoDisponible}
+                  cargandoCotizacion={cargandoCotizacionPresupuesto}
                   moneda={monedaActual}
                   onActualizarPresupuesto={actualizarMontoPresupuesto}
                 />
@@ -327,6 +331,7 @@ function App() {
                 restante={restanteConvertido}
                 porcentajeUsado={porcentajeUsado}
                 cotizacionNoDisponible={cotizacionPresupuestoNoDisponible}
+                cargandoCotizacion={cargandoCotizacionPresupuesto}
                 moneda={monedaActual}
                 onActualizarPresupuesto={actualizarMontoPresupuesto}
               />

@@ -42,6 +42,8 @@ interface UsePresupuestoMensualResult {
   porcentajeUsado: number;
   /** true si falta alguna cotización: gastado/restante/% no son confiables */
   cotizacionNoDisponible: boolean;
+  /** true mientras se piden las cotizaciones: gastado/restante/% todavía no valen */
+  cargandoCotizacion: boolean;
 }
 
 export function usePresupuestoMensual({
@@ -56,7 +58,11 @@ export function usePresupuestoMensual({
 
   const anioMes = useMemo(obtenerAnioMesActual, []);
 
-  const { estadisticasConvertidas, cotizacionNoDisponible } = useEstadisticasConvertidas(gastos, monedaDestino);
+  const {
+    estadisticasConvertidas,
+    cotizacionNoDisponible,
+    cargandoConvertidas: cargandoCotizacion,
+  } = useEstadisticasConvertidas(gastos, monedaDestino);
 
   // Cargar presupuesto y gastos fijos desde Firestore (mostrar caché al instante si hay)
   useEffect(() => {
@@ -305,6 +311,7 @@ export function usePresupuestoMensual({
     restanteConvertido,
     porcentajeUsado,
     cotizacionNoDisponible,
+    cargandoCotizacion,
   };
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Gasto, Estadisticas } from '../types';
 import { obtenerTipoCambio } from '../services/exchangeRate';
 import { calcularEstadisticasFromGastos } from '../utils/estadisticas';
@@ -23,38 +23,59 @@ export async function convertirGastos(gastos: Gasto[], monedaDestino: string): P
   return gastos.map((g) => ({ ...g, monto: g.monto * tasaPorOrigen.get(g.moneda || monedaDestino)! }));
 }
 
-// Convierte todas las estadísticas a la moneda de destino indicada (ej: 'ARS', 'USD')
+interface ResultadoConversion {
+  gastos: Gasto[];
+  monedaDestino: string;
+  estadisticas: Estadisticas | null;
+}
+
+// Convierte todas las estadísticas a la moneda de destino indicada (ej: 'ARS', 'USD').
+// Mientras la conversión está pendiente devuelve estadisticasConvertidas = null y
+// cargandoConvertidas = true: nunca expone montos sin convertir ni de un cálculo anterior.
 export function useEstadisticasConvertidas(
   gastos: Gasto[],
   monedaDestino: string
 ): UseEstadisticasConvertidasResult {
-  const [estadisticasConvertidas, setEstadisticasConvertidas] = useState<Estadisticas | null>(null);
-  const [cargandoConvertidas, setCargandoConvertidas] = useState(false);
-  const [cotizacionNoDisponible, setCotizacionNoDisponible] = useState(false);
+  // Si todo está en la moneda destino no hace falta la API: cálculo sincrónico, sin carga
+  const sinConversion = useMemo(
+    () =>
+      gastos.every((g) => (g.moneda || monedaDestino) === monedaDestino)
+        ? calcularEstadisticasFromGastos(gastos)
+        : null,
+    [gastos, monedaDestino]
+  );
+  const [resultado, setResultado] = useState<ResultadoConversion | null>(null);
 
   useEffect(() => {
+    if (sinConversion) return;
     let cancelado = false;
 
-    const calcular = async () => {
-      setCargandoConvertidas(true);
-      const convertidos = await convertirGastos(gastos, monedaDestino);
+    convertirGastos(gastos, monedaDestino).then((convertidos) => {
       if (cancelado) return;
+      setResultado({
+        gastos,
+        monedaDestino,
+        estadisticas: convertidos === null ? null : calcularEstadisticasFromGastos(convertidos),
+      });
+    });
 
-      if (convertidos === null) {
-        setEstadisticasConvertidas(null);
-        setCotizacionNoDisponible(true);
-      } else {
-        setEstadisticasConvertidas(calcularEstadisticasFromGastos(convertidos));
-        setCotizacionNoDisponible(false);
-      }
-      setCargandoConvertidas(false);
-    };
-
-    calcular();
     return () => {
       cancelado = true;
     };
-  }, [gastos, monedaDestino]);
+  }, [gastos, monedaDestino, sinConversion]);
 
-  return { estadisticasConvertidas, cargandoConvertidas, cotizacionNoDisponible };
+  if (sinConversion) {
+    return { estadisticasConvertidas: sinConversion, cargandoConvertidas: false, cotizacionNoDisponible: false };
+  }
+
+  // Solo vale el resultado calculado para estos mismos gastos y moneda
+  const vigente = resultado !== null && resultado.gastos === gastos && resultado.monedaDestino === monedaDestino;
+  if (!vigente) {
+    return { estadisticasConvertidas: null, cargandoConvertidas: true, cotizacionNoDisponible: false };
+  }
+  return {
+    estadisticasConvertidas: resultado.estadisticas,
+    cargandoConvertidas: false,
+    cotizacionNoDisponible: resultado.estadisticas === null,
+  };
 }

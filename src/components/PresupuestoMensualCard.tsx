@@ -12,6 +12,8 @@ interface PresupuestoMensualCardProps {
   moneda: Moneda;
   /** Sin cotización: no mostramos gastado/restante (serían montos mal convertidos) */
   cotizacionNoDisponible?: boolean;
+  /** Cotización pendiente: tampoco mostramos gastado/restante todavía */
+  cargandoCotizacion?: boolean;
   onActualizarPresupuesto: (monto: number) => void;
 }
 
@@ -22,6 +24,7 @@ export function PresupuestoMensualCard({
   porcentajeUsado,
   moneda,
   cotizacionNoDisponible = false,
+  cargandoCotizacion = false,
   onActualizarPresupuesto,
 }: PresupuestoMensualCardProps) {
   const mesActual = new Date();
@@ -31,6 +34,8 @@ export function PresupuestoMensualCard({
     const value = parseFloat(e.target.value.replace(',', '.')) || 0;
     onActualizarPresupuesto(value);
   };
+
+  const sinMontos = cotizacionNoDisponible || cargandoCotizacion;
 
   const colorBarra =
     porcentajeUsado >= 100 ? 'bg-red-500' : porcentajeUsado >= 80 ? 'bg-amber-500' : 'bg-emerald-500';
@@ -47,7 +52,7 @@ export function PresupuestoMensualCard({
             <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{nombreMes}</p>
           </div>
         </div>
-        {!cotizacionNoDisponible && (
+        {!sinMontos && (
           <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
             <Gauge size={16} className="text-primary-600 dark:text-primary-400" />
             <span>{porcentajeUsado.toFixed(0)}% usado</span>
@@ -65,19 +70,19 @@ export function PresupuestoMensualCard({
         <div>
           <p className="text-gray-500 dark:text-slate-400 mb-1">Gastado</p>
           <p className="font-bold text-gray-800 dark:text-slate-100">
-            {cotizacionNoDisponible ? '—' : formatearMonto(totalGastado, moneda, 0)}
+            {sinMontos ? '—' : formatearMonto(totalGastado, moneda, 0)}
           </p>
         </div>
         <div>
           <p className="text-gray-500 dark:text-slate-400 mb-1">Restante</p>
           <p className={`font-bold ${restante <= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-            {cotizacionNoDisponible ? '—' : formatearMonto(restante, moneda, 0)}
+            {sinMontos ? '—' : formatearMonto(restante, moneda, 0)}
           </p>
         </div>
       </div>
 
-      {cotizacionNoDisponible ? (
-        <AvisoCotizacion compacto />
+      {sinMontos ? (
+        <AvisoCotizacion compacto cargando={cargandoCotizacion} />
       ) : (
         <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2 mt-1">
           <div

@@ -1,12 +1,34 @@
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface AvisoCotizacionProps {
   /** Versión en línea (texto chico) para usar dentro de una tarjeta */
   compacto?: boolean;
+  /** La cotización todavía se está pidiendo (en vez de no disponible) */
+  cargando?: boolean;
 }
 
-/** Se muestra en lugar de montos convertidos cuando no hay cotización disponible. */
-export function AvisoCotizacion({ compacto = false }: AvisoCotizacionProps) {
+/**
+ * Se muestra en lugar de montos convertidos cuando la cotización todavía carga
+ * o no está disponible: nunca mostramos montos sin convertir como si fueran válidos.
+ */
+export function AvisoCotizacion({ compacto = false, cargando = false }: AvisoCotizacionProps) {
+  if (cargando) {
+    return compacto ? (
+      <span role="status" className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
+        <RefreshCw size={12} className="animate-spin" />
+        Cargando…
+      </span>
+    ) : (
+      <div
+        role="status"
+        className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white p-6 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+      >
+        <RefreshCw size={18} className="animate-spin text-primary-500" />
+        Cargando cotizaciones…
+      </div>
+    );
+  }
+
   if (compacto) {
     return (
       <span role="status" className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">

@@ -76,3 +76,33 @@ test('con cotización disponible se muestran los montos convertidos', async ({ p
     page.getByText('Total de Gastos', { exact: true }).locator('xpath=following-sibling::p')
   ).toHaveText(/150\.000/);
 });
+
+test('mientras cargan las cotizaciones el inicio muestra un estado de carga, no montos sin convertir', async ({ page }) => {
+  // Retenemos la respuesta de la API hasta que el test la libere
+  let liberar!: () => void;
+  const respuestaLiberada = new Promise<void>((resolve) => (liberar = resolve));
+  await page.route(API, async (route) => {
+    await respuestaLiberada;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ result: 'success', base_code: 'USD', rates: { USD: 1, ARS: 1500 } }),
+    });
+  });
+
+  await registrarUsuarioLocal(page);
+  await cargarGastoEnDolares(page, 'Libro', '100');
+  await page.getByRole('button', { name: 'Inicio', exact: true }).click();
+
+  // Cotización pendiente: carga visible y ningún monto (ni US$ 100 sumado como $ 100)
+  await expect(page.getByText('Cargando cotizaciones…')).toBeVisible();
+  await expect(page.getByText('Total de Gastos', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Cotización no disponible')).toHaveCount(0);
+
+  liberar();
+
+  await expect(
+    page.getByText('Total de Gastos', { exact: true }).locator('xpath=following-sibling::p')
+  ).toHaveText(/150\.000/);
+  await expect(page.getByText('Cargando cotizaciones…')).toHaveCount(0);
+});

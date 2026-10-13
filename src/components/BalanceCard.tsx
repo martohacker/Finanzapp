@@ -10,6 +10,8 @@ interface BalanceCardProps {
   totalIngresosMes: number;
   /** null si no hay cotización para convertir los gastos */
   gastoDelMes: number | null;
+  /** gastoDelMes es null porque la cotización todavía carga (no porque falte) */
+  cargandoCotizacion?: boolean;
   ingresos: Ingreso[];
   moneda: Moneda;
   onAgregarIngreso: (datos: { descripcion: string; monto: number; fecha: string; moneda: string }) => void;
@@ -19,6 +21,7 @@ interface BalanceCardProps {
 export function BalanceCard({
   totalIngresosMes,
   gastoDelMes,
+  cargandoCotizacion = false,
   ingresos,
   moneda,
   onAgregarIngreso,
@@ -84,7 +87,7 @@ export function BalanceCard({
             {balance === null ? '—' : formatearMonto(balance, moneda, 0)}
           </span>
         </div>
-        {balance === null && <AvisoCotizacion compacto />}
+        {balance === null && <AvisoCotizacion compacto cargando={cargandoCotizacion} />}
       </div>
 
       {!mostrarForm ? (
