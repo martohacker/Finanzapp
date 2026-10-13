@@ -60,3 +60,17 @@ test('a las 22:30 hora Argentina un gasto nuevo queda con la fecha de hoy', asyn
   await page.getByRole('button', { name: 'Gastos', exact: true }).click();
   await expect(filaDeGasto(page, 'Cena')).toContainText('13/10/2026');
 });
+
+test('un gasto del 01/10/2026 cuenta en octubre', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00-03:00'));
+  await registrarUsuarioLocal(page);
+
+  await cargarGasto(page, 'Alquiler', '100', '2026-10-01');
+
+  await page.getByRole('button', { name: 'Inicio', exact: true }).click();
+  await expect(tarjeta(page, 'Gasto del Mes')).toHaveText('$ 100');
+
+  // Y no se cuela en septiembre
+  await page.getByRole('button', { name: 'Mes anterior' }).click();
+  await expect(tarjeta(page, 'Total de Gastos')).toHaveText('$ 0');
+});
