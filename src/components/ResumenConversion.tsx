@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Estadisticas as EstadisticasType, Gasto } from '../types';
+import { Gasto } from '../types';
 import { Moneda } from '../constants/monedas';
 import { useCotizaciones } from '../hooks/useCotizaciones';
 import { formatearMonto } from '../utils/formato';
-import { DollarSign, RefreshCw, AlertCircle } from 'lucide-react';
+import { DollarSign, RefreshCw } from 'lucide-react';
+import { AvisoCotizacion } from './AvisoCotizacion';
 import { esDelMes, hoyLocal } from '../utils/fechas';
 
 interface ResumenConversionProps {
-  estadisticas: EstadisticasType;
   monedaActual: Moneda;
   monedaDestino?: Moneda; // Por defecto ARS
   gastos: Gasto[];
 }
 
 export function ResumenConversion({
-  estadisticas,
   monedaActual,
   monedaDestino,
   gastos,
@@ -53,6 +52,12 @@ export function ResumenConversion({
             monedaOrigen,
             destino.codigo
           );
+          if (montoConvertido === null) {
+            // Sin cotización: no mostramos montos mal convertidos
+            setTasaCambio(null);
+            setConversiones({});
+            return;
+          }
 
           total += montoConvertido;
 
@@ -78,7 +83,7 @@ export function ResumenConversion({
     };
 
     calcularConversiones();
-  }, [gastos, monedaActual.codigo, destino.codigo, convertirDirecto, estadisticas.totalGastos, estadisticas.gastoDelMes, estadisticas.gastoDelDia]);
+  }, [gastos, monedaActual.codigo, destino.codigo, convertirDirecto]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-green-500">
@@ -137,10 +142,7 @@ export function ResumenConversion({
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-2 py-8 text-orange-600">
-          <AlertCircle size={20} />
-          <span>No se pudieron obtener las cotizaciones</span>
-        </div>
+        <AvisoCotizacion />
       )}
     </div>
   );

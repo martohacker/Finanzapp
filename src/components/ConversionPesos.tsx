@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Moneda } from '../constants/monedas';
 import { useCotizaciones } from '../hooks/useCotizaciones';
 import { formatearMonto } from '../utils/formato';
-import { TrendingUp, RefreshCw, AlertCircle } from 'lucide-react';
+import { TrendingUp, RefreshCw } from 'lucide-react';
+import { AvisoCotizacion } from './AvisoCotizacion';
 
 interface ConversionPesosProps {
   monto: number;
@@ -80,10 +81,7 @@ export function ConversionPesos({
               {formatearMonto(montoConvertido, destino)}
             </p>
           ) : (
-            <div className="flex items-center gap-1 text-orange-600">
-              <AlertCircle size={14} />
-              <span className="text-xs">Sin cotización</span>
-            </div>
+            <AvisoCotizacion compacto />
           )}
         </div>
       </div>

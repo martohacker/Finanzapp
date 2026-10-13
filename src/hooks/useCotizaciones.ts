@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obtenerTipoCambio, obtenerTasas } from '../services/exchangeRate';
+import { convertirMonto, obtenerTasas } from '../services/exchangeRate';
 
 interface Cotizaciones {
   [key: string]: number; // moneda -> tasa de cambio
@@ -79,27 +79,12 @@ export function useCotizaciones(monedaBase: string, monedaDestino: string = 'ARS
     return monto;
   }, [monedaDestino]);
 
-  // Función más simple: convertir directamente usando API
-  const convertirDirecto = useCallback(async (
-    monto: number,
-    monedaOrigen: string,
-    monedaDestino: string = 'ARS'
-  ): Promise<number> => {
-    if (monedaOrigen === monedaDestino) {
-      return monto;
-    }
-
-    try {
-      const tasa = await obtenerTipoCambio(monedaOrigen, monedaDestino);
-      if (tasa !== null) {
-        return monto * tasa;
-      }
-    } catch (err) {
-      console.error('Error en conversión directa:', err);
-    }
-
-    return monto;
-  }, []);
+  // Convierte usando la API; null si no hay cotización (nunca asume 1:1)
+  const convertirDirecto = useCallback(
+    (monto: number, monedaOrigen: string, monedaDestino: string = 'ARS'): Promise<number | null> =>
+      convertirMonto(monto, monedaOrigen, monedaDestino),
+    []
+  );
 
   return {
     cotizaciones,

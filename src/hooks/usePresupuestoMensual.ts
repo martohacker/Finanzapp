@@ -40,6 +40,8 @@ interface UsePresupuestoMensualResult {
   totalGastadoConvertido: number;
   restanteConvertido: number;
   porcentajeUsado: number;
+  /** true si falta alguna cotización: gastado/restante/% no son confiables */
+  cotizacionNoDisponible: boolean;
 }
 
 export function usePresupuestoMensual({
@@ -54,7 +56,7 @@ export function usePresupuestoMensual({
 
   const anioMes = useMemo(obtenerAnioMesActual, []);
 
-  const { estadisticasConvertidas } = useEstadisticasConvertidas(gastos, monedaDestino);
+  const { estadisticasConvertidas, cotizacionNoDisponible } = useEstadisticasConvertidas(gastos, monedaDestino);
 
   // Cargar presupuesto y gastos fijos desde Firestore (mostrar caché al instante si hay)
   useEffect(() => {
@@ -302,6 +304,7 @@ export function usePresupuestoMensual({
     totalGastadoConvertido,
     restanteConvertido,
     porcentajeUsado,
+    cotizacionNoDisponible,
   };
 }
 

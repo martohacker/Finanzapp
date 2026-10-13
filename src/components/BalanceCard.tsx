@@ -3,11 +3,13 @@ import { Moneda } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { TrendingUp, Plus, Trash2 } from 'lucide-react';
 import { Ingreso } from '../types';
+import { AvisoCotizacion } from './AvisoCotizacion';
 import { hoyLocal } from '../utils/fechas';
 
 interface BalanceCardProps {
   totalIngresosMes: number;
-  gastoDelMes: number;
+  /** null si no hay cotización para convertir los gastos */
+  gastoDelMes: number | null;
   ingresos: Ingreso[];
   moneda: Moneda;
   onAgregarIngreso: (datos: { descripcion: string; monto: number; fecha: string; moneda: string }) => void;
@@ -27,7 +29,7 @@ export function BalanceCard({
   const [monto, setMonto] = useState('');
   const fechaHoy = hoyLocal();
 
-  const balance = totalIngresosMes - gastoDelMes;
+  const balance = gastoDelMes === null ? null : totalIngresosMes - gastoDelMes;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,21 +69,22 @@ export function BalanceCard({
         <div className="flex justify-between text-sm">
           <span className="text-gray-600 dark:text-slate-400">Gastos</span>
           <span className="font-semibold text-red-600 dark:text-red-400">
-            -{formatearMonto(gastoDelMes, moneda, 0)}
+            {gastoDelMes === null ? '—' : `-${formatearMonto(gastoDelMes, moneda, 0)}`}
           </span>
         </div>
         <div className="border-t border-gray-200 dark:border-slate-600 pt-2 flex justify-between">
           <span className="font-medium text-gray-700 dark:text-slate-300">Resto</span>
           <span
             className={`font-bold ${
-              balance >= 0
+              balance === null || balance >= 0
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-red-600 dark:text-red-400'
             }`}
           >
-            {formatearMonto(balance, moneda, 0)}
+            {balance === null ? '—' : formatearMonto(balance, moneda, 0)}
           </span>
         </div>
+        {balance === null && <AvisoCotizacion compacto />}
       </div>
 
       {!mostrarForm ? (

@@ -3,10 +3,12 @@ import { CATEGORIAS } from '../constants/categorias';
 import { Moneda } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { Wallet } from 'lucide-react';
+import { AvisoCotizacion } from './AvisoCotizacion';
 
 interface PresupuestoCategoriaSectionProps {
   presupuestosPorCategoria: PresupuestoCategoria[];
-  gastoPorCategoria: Record<string, number>;
+  /** null si no hay cotización para convertir los gastos */
+  gastoPorCategoria: Record<string, number> | null;
   moneda: Moneda;
   onGuardarLimite: (categoriaId: string, monto: number) => void;
   onQuitarLimite: (categoriaId: string) => void;
@@ -31,12 +33,17 @@ export function PresupuestoCategoriaSection({
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
         Definí un tope por categoría para este mes. Si no ponés límite, no se controla.
       </p>
+      {gastoPorCategoria === null && (
+        <div className="mb-4">
+          <AvisoCotizacion />
+        </div>
+      )}
       <div className="space-y-3">
         {CATEGORIAS.map((cat) => {
-          const gastado = gastoPorCategoria[cat.id] ?? 0;
+          const gastado = gastoPorCategoria?.[cat.id] ?? 0;
           const limite = getLimite(cat.id);
-          const sobrepasado = limite > 0 && gastado > limite;
-          const porcentaje = limite > 0 ? Math.min(gastado / limite, 2) : 0;
+          const sobrepasado = gastoPorCategoria !== null && limite > 0 && gastado > limite;
+          const porcentaje = gastoPorCategoria !== null && limite > 0 ? Math.min(gastado / limite, 2) : 0;
           const cercaDelLimite = !sobrepasado && porcentaje >= 0.8;
           return (
             <div
@@ -65,7 +72,7 @@ export function PresupuestoCategoriaSection({
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <span className={sobrepasado ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-600 dark:text-slate-400'}>
-                  {formatearMonto(gastado, moneda, 0)} gastado
+                  {gastoPorCategoria === null ? '—' : `${formatearMonto(gastado, moneda, 0)} gastado`}
                 </span>
                 {limite > 0 && (
                   <>

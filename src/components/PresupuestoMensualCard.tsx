@@ -2,6 +2,7 @@ import { PresupuestoMensual } from '../types';
 import { Moneda } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { Gauge, WalletCards } from 'lucide-react';
+import { AvisoCotizacion } from './AvisoCotizacion';
 
 interface PresupuestoMensualCardProps {
   presupuesto: PresupuestoMensual | null;
@@ -9,6 +10,8 @@ interface PresupuestoMensualCardProps {
   restante: number;
   porcentajeUsado: number;
   moneda: Moneda;
+  /** Sin cotización: no mostramos gastado/restante (serían montos mal convertidos) */
+  cotizacionNoDisponible?: boolean;
   onActualizarPresupuesto: (monto: number) => void;
 }
 
@@ -18,6 +21,7 @@ export function PresupuestoMensualCard({
   restante,
   porcentajeUsado,
   moneda,
+  cotizacionNoDisponible = false,
   onActualizarPresupuesto,
 }: PresupuestoMensualCardProps) {
   const mesActual = new Date();
@@ -43,10 +47,12 @@ export function PresupuestoMensualCard({
             <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{nombreMes}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-          <Gauge size={16} className="text-primary-600 dark:text-primary-400" />
-          <span>{porcentajeUsado.toFixed(0)}% usado</span>
-        </div>
+        {!cotizacionNoDisponible && (
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
+            <Gauge size={16} className="text-primary-600 dark:text-primary-400" />
+            <span>{porcentajeUsado.toFixed(0)}% usado</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-xs sm:text-sm">
@@ -59,23 +65,27 @@ export function PresupuestoMensualCard({
         <div>
           <p className="text-gray-500 dark:text-slate-400 mb-1">Gastado</p>
           <p className="font-bold text-gray-800 dark:text-slate-100">
-            {formatearMonto(totalGastado, moneda, 0)}
+            {cotizacionNoDisponible ? '—' : formatearMonto(totalGastado, moneda, 0)}
           </p>
         </div>
         <div>
           <p className="text-gray-500 dark:text-slate-400 mb-1">Restante</p>
           <p className={`font-bold ${restante <= 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-            {formatearMonto(restante, moneda, 0)}
+            {cotizacionNoDisponible ? '—' : formatearMonto(restante, moneda, 0)}
           </p>
         </div>
       </div>
 
-      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2 mt-1">
-        <div
-          className={`h-2 rounded-full transition-all duration-300 ${colorBarra}`}
-          style={{ width: `${porcentajeUsado}%` }}
-        />
-      </div>
+      {cotizacionNoDisponible ? (
+        <AvisoCotizacion compacto />
+      ) : (
+        <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2 mt-1">
+          <div
+            className={`h-2 rounded-full transition-all duration-300 ${colorBarra}`}
+            style={{ width: `${porcentajeUsado}%` }}
+          />
+        </div>
+      )}
 
       <div className="mt-2">
         <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">
