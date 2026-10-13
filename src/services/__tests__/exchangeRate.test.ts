@@ -23,11 +23,14 @@ let fetchMock: ReturnType<typeof vi.fn>;
 let obtenerTasas: typeof ExchangeRateModule.obtenerTasas;
 let obtenerTipoCambio: typeof ExchangeRateModule.obtenerTipoCambio;
 let convertirMonto: typeof ExchangeRateModule.convertirMonto;
+let limpiarCacheCotizacionesLegado: typeof ExchangeRateModule.limpiarCacheCotizacionesLegado;
 
 beforeEach(async () => {
   // Módulo fresco en cada test: el "fallo reciente" vive en memoria del módulo
   vi.resetModules();
-  ({ obtenerTasas, obtenerTipoCambio, convertirMonto } = await import('../exchangeRate'));
+  ({ obtenerTasas, obtenerTipoCambio, convertirMonto, limpiarCacheCotizacionesLegado } = await import(
+    '../exchangeRate'
+  ));
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-10-13T12:00:00-03:00'));
   vi.stubGlobal('localStorage', new MemoryStorage());
@@ -174,5 +177,30 @@ describe('fallo reciente: 5 minutos sin volver a pedir', () => {
     fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
     await obtenerTasas('USD');
     expect(localStorage.length).toBe(0);
+  });
+});
+
+describe('limpiarCacheCotizacionesLegado', () => {
+  it('borra solo las claves del caché viejo de useCotizaciones', () => {
+    localStorage.setItem('finanzapp-cotizaciones', '{"ARS":1000}');
+    localStorage.setItem('finanzapp-cotizaciones-timestamp', '123');
+    localStorage.setItem('finanzapp-tasas-USD', '{"timestamp":1,"rates":{}}');
+    localStorage.setItem('finanzapp-gastos-u1', '[]');
+
+    limpiarCacheCotizacionesLegado();
+
+    expect(localStorage.getItem('finanzapp-cotizaciones')).toBeNull();
+    expect(localStorage.getItem('finanzapp-cotizaciones-timestamp')).toBeNull();
+    expect(localStorage.getItem('finanzapp-tasas-USD')).not.toBeNull();
+    expect(localStorage.getItem('finanzapp-gastos-u1')).toBe('[]');
+  });
+
+  it('no falla si localStorage no está disponible', () => {
+    vi.stubGlobal('localStorage', {
+      removeItem: () => {
+        throw new Error('SecurityError');
+      },
+    });
+    expect(() => limpiarCacheCotizacionesLegado()).not.toThrow();
   });
 });

@@ -106,3 +106,24 @@ test('mientras cargan las cotizaciones el inicio muestra un estado de carga, no 
   ).toHaveText(/150\.000/);
   await expect(page.getByText('Cargando cotizaciones…')).toHaveCount(0);
 });
+
+test('al iniciar se borran las claves del caché viejo de cotizaciones', async ({ page }) => {
+  // Simulamos un navegador con datos de la versión anterior (antes de que cargue la app)
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('sembrado')) return;
+    sessionStorage.setItem('sembrado', '1');
+    localStorage.setItem('finanzapp-cotizaciones', '{"ARS":1000}');
+    localStorage.setItem('finanzapp-cotizaciones-timestamp', '123');
+    localStorage.setItem('otra-clave', 'se mantiene');
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Iniciar Sesión' })).toBeVisible();
+
+  const claves = await page.evaluate(() => ({
+    cotizaciones: localStorage.getItem('finanzapp-cotizaciones'),
+    timestamp: localStorage.getItem('finanzapp-cotizaciones-timestamp'),
+    otra: localStorage.getItem('otra-clave'),
+  }));
+  expect(claves).toEqual({ cotizaciones: null, timestamp: null, otra: 'se mantiene' });
+});

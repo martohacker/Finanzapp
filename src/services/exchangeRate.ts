@@ -104,3 +104,15 @@ export async function convertirMonto(
   const tasa = await obtenerTipoCambio(monedaOrigen, monedaDestino);
   return tasa === null ? null : monto * tasa;
 }
+
+// Claves del caché que tenía useCotizaciones antes de que lo manejara este servicio
+const CLAVES_CACHE_LEGADO = ['finanzapp-cotizaciones', 'finanzapp-cotizaciones-timestamp'];
+
+/** Borra el caché viejo de cotizaciones. Se llama una vez al iniciar la app. */
+export function limpiarCacheCotizacionesLegado() {
+  try {
+    CLAVES_CACHE_LEGADO.forEach((clave) => localStorage.removeItem(clave));
+  } catch {
+    // Sin storage disponible: no hay nada que limpiar
+  }
+}
