@@ -21,10 +21,7 @@ export function ConversionPesos({
   const [cargando, setCargando] = useState(false);
 
   const destino = monedaDestino || { codigo: 'ARS', nombre: 'Peso Argentino', simbolo: '$', locale: 'es-AR' };
-  const { convertirDirecto, actualizarCotizaciones, cargando: cargandoCotizaciones } = useCotizaciones(
-    monedaOrigen.codigo,
-    destino.codigo
-  );
+  const { convertirDirecto, actualizarCotizaciones, cargando: cargandoCotizaciones } = useCotizaciones(monedaOrigen.codigo);
 
   useEffect(() => {
     const calcularConversion = async () => {
