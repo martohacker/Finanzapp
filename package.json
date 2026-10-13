@@ -19,7 +19,8 @@
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "generate-icons": "node scripts/generate-pwa-icons.cjs"
+    "generate-icons": "node scripts/generate-pwa-icons.cjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
@@ -55,6 +56,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-pwa": "^1.1.0",
+    "vitest": "^3.2.7",
     "wait-on": "^9.0.1"
   },
   "build": {
