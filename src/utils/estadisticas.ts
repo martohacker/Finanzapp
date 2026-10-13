@@ -1,46 +1,45 @@
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
-import { esDelMes, fechaLocalADate, hoyLocal, sumarDias } from './fechas';
+import { diasEntre, esDelMes, hoyLocal, sumarDias } from './fechas';
 
 /**
- * Calcula estadísticas a partir de un array de gastos (útil para períodos filtrados).
+ * Única implementación de las estadísticas de gastos (útil también para períodos
+ * filtrados). Los montos se suman tal cual: si hay varias monedas, convertir
+ * antes los gastos (ver useEstadisticasConvertidas).
  */
-export function calcularEstadisticasFromGastos(gastos: Gasto[]): Estadisticas {
-  const ahora = new Date();
+export function calcularEstadisticasFromGastos(
+  gastos: Gasto[],
+  ahora: Date = new Date()
+): Estadisticas {
   const fechaActual = hoyLocal(ahora);
   const mesActual = ahora.getMonth();
   const añoActual = ahora.getFullYear();
 
-  const gastosDelDia = gastos.filter((g) => g.fecha === fechaActual);
-  const gastosDelMes = gastos.filter((g) => {
-    return esDelMes(g.fecha, añoActual, mesActual);
+  let totalGastos = 0;
+  let gastoDelMes = 0;
+  let gastoDelDia = 0;
+  let fechaMinima: string | null = null;
+  const gastoPorCategoria: Record<string, number> = {};
+  CATEGORIAS.forEach((cat) => {
+    gastoPorCategoria[cat.id] = 0;
   });
 
-  const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
-  const gastoDelDia = gastosDelDia.reduce((sum, g) => sum + g.monto, 0);
-  const gastoDelMes = gastosDelMes.reduce((sum, g) => sum + g.monto, 0);
+  for (const g of gastos) {
+    totalGastos += g.monto;
+    if (esDelMes(g.fecha, añoActual, mesActual)) gastoDelMes += g.monto;
+    if (g.fecha === fechaActual) gastoDelDia += g.monto;
+    // 'YYYY-MM-DD' ordena lexicográficamente igual que cronológicamente
+    if (fechaMinima === null || g.fecha < fechaMinima) fechaMinima = g.fecha;
+    const catId = g.categoria || 'otros';
+    gastoPorCategoria[catId] = (gastoPorCategoria[catId] || 0) + g.monto;
+  }
 
   const diasDelMes = ahora.getDate();
   const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
 
-  const diasTotal =
-    gastos.length > 0
-      ? Math.max(
-          1,
-          Math.ceil(
-            (ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) /
-              (1000 * 60 * 60 * 24)
-          )
-        )
-      : 1;
+  // Días calendario desde el gasto más viejo hasta hoy, ambos inclusive
+  const diasTotal = fechaMinima ? Math.max(1, diasEntre(fechaMinima, fechaActual) + 1) : 1;
   const promedioMensual = (totalGastos / diasTotal) * 30;
-
-  const gastoPorCategoria: Record<string, number> = {};
-  CATEGORIAS.forEach((cat) => {
-    gastoPorCategoria[cat.id] = gastos
-      .filter((g) => g.categoria === cat.id)
-      .reduce((sum, g) => sum + g.monto, 0);
-  });
 
   return {
     totalGastos,

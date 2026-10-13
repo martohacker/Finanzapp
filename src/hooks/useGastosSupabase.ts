@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Gasto, Estadisticas } from '../types';
-import { CATEGORIAS } from '../constants/categorias';
+import { Gasto } from '../types';
 import { supabase } from '../services/supabase';
-import { esDelMes, fechaLocalADate, hoyLocal } from '../utils/fechas';
 
 const obtenerStorageKey = (userId: string | null) => 
   userId ? `finanzapp-gastos-${userId}` : 'finanzapp-gastos-temp';
@@ -181,53 +179,12 @@ export function useGastosSupabase(userId: string | null, usandoSupabase: boolean
     await guardarGasto(gastoEditado, false);
   };
 
-  const calcularEstadisticas = (): Estadisticas => {
-    const ahora = new Date();
-    const fechaActual = hoyLocal(ahora);
-    const mesActual = ahora.getMonth();
-    const añoActual = ahora.getFullYear();
-
-    const gastosDelDia = gastos.filter(g => g.fecha === fechaActual);
-    const gastosDelMes = gastos.filter(g => {
-      return esDelMes(g.fecha, añoActual, mesActual);
-    });
-
-    const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
-    const gastoDelDia = gastosDelDia.reduce((sum, g) => sum + g.monto, 0);
-    const gastoDelMes = gastosDelMes.reduce((sum, g) => sum + g.monto, 0);
-
-    const diasDelMes = ahora.getDate();
-    const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
-
-    const diasTotal = gastos.length > 0 
-      ? Math.max(1, Math.ceil((ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) / (1000 * 60 * 60 * 24)))
-      : 1;
-    const promedioMensual = (totalGastos / diasTotal) * 30;
-
-    const gastoPorCategoria: Record<string, number> = {};
-    CATEGORIAS.forEach(cat => {
-      gastoPorCategoria[cat.id] = gastos
-        .filter(g => g.categoria === cat.id)
-        .reduce((sum, g) => sum + g.monto, 0);
-    });
-
-    return {
-      totalGastos,
-      promedioDiario,
-      promedioMensual,
-      gastoPorCategoria,
-      gastoDelMes,
-      gastoDelDia,
-    };
-  };
-
   return {
     gastos,
     cargando,
     agregarGasto,
     eliminarGasto,
     editarGasto,
-    calcularEstadisticas,
   };
 }
 

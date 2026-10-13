@@ -57,3 +57,37 @@ describe('rangoMesActual / rangoMesAnterior', () => {
     expect(rangoMesAnterior()).toEqual({ desde: '2026-12-01', hasta: '2026-12-31' });
   });
 });
+
+describe('promedioMensual', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  // 30 días inclusive (14/09 → 13/10), total 300 → 300/30*30 = 300
+  const desordenados = [gasto('2026-09-14', 100), gasto('2026-10-13', 100), gasto('2026-10-01', 100)];
+
+  it('no depende del orden de los gastos', () => {
+    vi.setSystemTime(new Date('2026-10-13T12:00:00-03:00'));
+    const nuevoAViejo = [...desordenados].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    const viejoANuevo = [...nuevoAViejo].reverse();
+    const esperado = calcularEstadisticasFromGastos(nuevoAViejo).promedioMensual;
+    expect(esperado).toBeCloseTo(300);
+    expect(calcularEstadisticasFromGastos(viejoANuevo).promedioMensual).toBeCloseTo(esperado);
+    expect(calcularEstadisticasFromGastos(desordenados).promedioMensual).toBeCloseTo(esperado);
+  });
+
+  it('no cambia a las 22:30', () => {
+    vi.setSystemTime(new Date('2026-10-13T22:30:00-03:00'));
+    expect(calcularEstadisticasFromGastos(desordenados).promedioMensual).toBeCloseTo(300);
+  });
+});
+
+describe('gastoPorCategoria', () => {
+  it('incluye todas las categorías conocidas y también las desconocidas', () => {
+    const stats = calcularEstadisticasFromGastos([
+      { ...gasto('2026-10-01', 10), categoria: 'categoria-inexistente' },
+      { ...gasto('2026-10-02', 5), categoria: '' },
+    ]);
+    expect(stats.gastoPorCategoria['categoria-inexistente']).toBe(10);
+    expect(stats.gastoPorCategoria['otros']).toBe(5);
+  });
+});

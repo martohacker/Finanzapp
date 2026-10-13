@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Gasto, Estadisticas } from '../types';
 import { obtenerTipoCambio } from '../services/exchangeRate';
-import { esDelMes, fechaLocalADate, hoyLocal } from '../utils/fechas';
+import { calcularEstadisticasFromGastos } from '../utils/estadisticas';
 
 interface UseEstadisticasConvertidasResult {
   estadisticasConvertidas: Estadisticas | null;
@@ -49,11 +49,6 @@ export function useEstadisticasConvertidas(
 
       setCargandoConvertidas(true);
       try {
-        const ahora = new Date();
-        const fechaActual = hoyLocal(ahora);
-        const mesActual = ahora.getMonth();
-        const añoActual = ahora.getFullYear();
-
         // Obtener tasas solo para pares únicos (máximo 1 request por moneda distinta)
         const paresUnicos = new Set<string>();
         for (const g of gastos) {
@@ -68,56 +63,15 @@ export function useEstadisticasConvertidas(
           tasasMap.set(par, tasa);
         }
 
-        let totalGastos = 0;
-        let gastoDelMes = 0;
-        let gastoDelDia = 0;
-        const gastoPorCategoria: Record<string, number> = {};
-
-        for (const g of gastos) {
-          if (cancelRef.current) return;
+        const gastosConvertidos = gastos.map((g) => {
           const origen = g.moneda || monedaDestino;
           const tasa = origen === monedaDestino ? 1 : (tasasMap.get(`${origen}|${monedaDestino}`) ?? 1);
-          const montoConvertido = g.monto * tasa;
-
-          totalGastos += montoConvertido;
-
-          if (esDelMes(g.fecha, añoActual, mesActual)) {
-            gastoDelMes += montoConvertido;
-          }
-
-          if (g.fecha === fechaActual) {
-            gastoDelDia += montoConvertido;
-          }
-
-          const catId = g.categoria || 'otros';
-          gastoPorCategoria[catId] = (gastoPorCategoria[catId] || 0) + montoConvertido;
-        }
+          return { ...g, monto: g.monto * tasa };
+        });
 
         if (cancelRef.current) return;
 
-        const diasDelMes = ahora.getDate();
-        const promedioDiario = diasDelMes > 0 ? gastoDelMes / diasDelMes : 0;
-
-        const diasTotal =
-          gastos.length > 0
-            ? Math.max(
-                1,
-                Math.ceil(
-                  (ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) /
-                    (1000 * 60 * 60 * 24)
-                )
-              )
-            : 1;
-        const promedioMensual = (totalGastos / diasTotal) * 30;
-
-        setEstadisticasConvertidas({
-          totalGastos,
-          promedioDiario,
-          promedioMensual,
-          gastoPorCategoria,
-          gastoDelMes,
-          gastoDelDia,
-        });
+        setEstadisticasConvertidas(calcularEstadisticasFromGastos(gastosConvertidos));
       } catch (error) {
         if (!cancelRef.current) {
           console.error('Error al calcular estadísticas convertidas:', error);
