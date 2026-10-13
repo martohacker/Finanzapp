@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { obtenerTipoCambio, obtenerMultiplesTasas } from '../services/exchangeRate';
-import { MONEDAS } from '../constants/monedas';
+import { obtenerTipoCambio, obtenerTasas } from '../services/exchangeRate';
 
 interface Cotizaciones {
   [key: string]: number; // moneda -> tasa de cambio
@@ -40,9 +39,7 @@ export function useCotizaciones(monedaBase: string, monedaDestino: string = 'ARS
     setError(null);
 
     try {
-      // Obtener tipos de cambio para todas las monedas disponibles hacia la moneda destino
-      const codigosMonedas = MONEDAS.map(m => m.codigo);
-      const tasas = await obtenerMultiplesTasas(monedaBase, codigosMonedas);
+      const tasas = await obtenerTasas(monedaBase);
 
       if (tasas) {
         // Guardar en cache

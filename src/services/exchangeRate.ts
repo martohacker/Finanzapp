@@ -1,31 +1,50 @@
-// API gratuita para obtener cotizaciones
-const API_BASE_URL = 'https://api.exchangerate.host';
-const API_ALTERNATIVE_URL = 'https://api.exchangerate-api.com/v4/latest';
+// API gratuita sin API key (ExchangeRate-API, endpoint "open access").
+// Actualiza una vez por día; una llamada trae todas las tasas desde la base.
+// Ojo: ante un error responde HTTP 200 con { result: 'error' }.
+const API_URL = 'https://open.er-api.com/v6/latest';
 
-export interface ExchangeRates {
-  [key: string]: number;
-}
+const CACHE_PREFIX = 'finanzapp-tasas-';
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hora
 
-export interface ExchangeRateResponse {
-  success: boolean;
+export type ExchangeRates = Record<string, number>;
+
+interface TasasCacheadas {
+  timestamp: number;
   rates: ExchangeRates;
-  base: string;
-  date: string;
 }
 
-/**
- * Obtiene las tasas de cambio desde una moneda base
- */
-export async function obtenerCotizaciones(monedaBase: string): Promise<ExchangeRates | null> {
+// Requests en curso por base: llamadas concurrentes comparten el mismo fetch
+const enCurso = new Map<string, Promise<ExchangeRates | null>>();
+
+function leerCache(base: string): ExchangeRates | null {
   try {
-    const response = await fetch(`${API_BASE_URL}/latest?base=${monedaBase}`);
-    const data = await response.json();
-    
-    if (data.success && data.rates) {
-      return data.rates;
-    }
-    
+    const raw = localStorage.getItem(CACHE_PREFIX + base);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as TasasCacheadas;
+    if (Date.now() - cache.timestamp >= CACHE_DURATION) return null;
+    return cache.rates;
+  } catch {
     return null;
+  }
+}
+
+function guardarCache(base: string, rates: ExchangeRates) {
+  try {
+    const cache: TasasCacheadas = { timestamp: Date.now(), rates };
+    localStorage.setItem(CACHE_PREFIX + base, JSON.stringify(cache));
+  } catch {
+    // Sin storage disponible: seguimos sin caché
+  }
+}
+
+async function pedirTasas(base: string): Promise<ExchangeRates | null> {
+  try {
+    const response = await fetch(`${API_URL}/${base}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data?.result !== 'success' || !data.rates) return null;
+    guardarCache(base, data.rates);
+    return data.rates as ExchangeRates;
   } catch (error) {
     console.error('Error al obtener cotizaciones:', error);
     return null;
@@ -33,98 +52,43 @@ export async function obtenerCotizaciones(monedaBase: string): Promise<ExchangeR
 }
 
 /**
- * Convierte un monto de una moneda a otra
+ * Tasas desde una moneda base (1 base = rates[X] X). Cacheadas 1 hora en
+ * localStorage; los fallos no se cachean. Devuelve null si la API no responde.
  */
-export function convertirMoneda(
-  monto: number,
-  monedaOrigen: string,
-  monedaDestino: string,
-  tasas: ExchangeRates
-): number {
-  if (monedaOrigen === monedaDestino) {
-    return monto;
+export async function obtenerTasas(
+  base: string,
+  opciones: { forzar?: boolean } = {}
+): Promise<ExchangeRates | null> {
+  if (!opciones.forzar) {
+    const cacheadas = leerCache(base);
+    if (cacheadas) return cacheadas;
   }
 
-  // Si la moneda base es la de origen, usar la tasa directa
-  if (tasas[monedaDestino]) {
-    return monto * tasas[monedaDestino];
-  }
+  const pendiente = enCurso.get(base);
+  if (pendiente) return pendiente;
 
-  // Si necesitamos convertir primero a la base y luego a destino
-  // Por simplicidad, asumimos que las tasas están desde la base
-  return monto * (tasas[monedaDestino] || 1);
+  const request = pedirTasas(base).finally(() => enCurso.delete(base));
+  enCurso.set(base, request);
+  return request;
 }
 
-/**
- * Obtiene el tipo de cambio entre dos monedas
- */
+/** Tipo de cambio origen → destino, o null si no hay cotización disponible. */
 export async function obtenerTipoCambio(
   monedaOrigen: string,
   monedaDestino: string
 ): Promise<number | null> {
-  if (monedaOrigen === monedaDestino) {
-    return 1;
-  }
-
-  try {
-    // Intentar con la API principal
-    const response = await fetch(
-      `${API_BASE_URL}/convert?from=${monedaOrigen}&to=${monedaDestino}`
-    );
-    const data = await response.json();
-    
-    if (data.success && data.result) {
-      // La API puede devolver el resultado directamente o como número
-      const resultado = typeof data.result === 'number' ? data.result : parseFloat(data.result);
-      if (!isNaN(resultado) && resultado > 0) {
-        return resultado;
-      }
-    }
-
-    // Si la API principal falla, intentar con la alternativa
-    const altResponse = await fetch(`${API_ALTERNATIVE_URL}/${monedaOrigen}`);
-    const altData = await altResponse.json();
-    
-    if (altData && altData.rates && altData.rates[monedaDestino]) {
-      return altData.rates[monedaDestino];
-    }
-
-    // Como último recurso, usar la API principal con latest y calcular manualmente
-    const latestResponse = await fetch(`${API_BASE_URL}/latest?base=${monedaOrigen}&symbols=${monedaDestino}`);
-    const latestData = await latestResponse.json();
-    
-    if (latestData.success && latestData.rates && latestData.rates[monedaDestino]) {
-      return latestData.rates[monedaDestino];
-    }
-
-    return null;
-  } catch (error) {
-    console.error('Error al obtener tipo de cambio:', error);
-    return null;
-  }
+  if (monedaOrigen === monedaDestino) return 1;
+  const tasas = await obtenerTasas(monedaOrigen);
+  const tasa = tasas?.[monedaDestino];
+  return typeof tasa === 'number' && tasa > 0 ? tasa : null;
 }
 
-/**
- * Obtiene tipos de cambio de múltiples monedas desde una base
- */
-export async function obtenerMultiplesTasas(
-  monedaBase: string,
-  monedasDestino: string[]
-): Promise<Record<string, number> | null> {
-  try {
-    const symbols = monedasDestino.join(',');
-    const response = await fetch(
-      `${API_BASE_URL}/latest?base=${monedaBase}&symbols=${symbols}`
-    );
-    const data = await response.json();
-    
-    if (data.success && data.rates) {
-      return data.rates;
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Error al obtener múltiples tasas:', error);
-    return null;
-  }
+/** Convierte un monto, o null si no hay cotización disponible (nunca asume 1:1). */
+export async function convertirMonto(
+  monto: number,
+  monedaOrigen: string,
+  monedaDestino: string
+): Promise<number | null> {
+  const tasa = await obtenerTipoCambio(monedaOrigen, monedaDestino);
+  return tasa === null ? null : monto * tasa;
 }
