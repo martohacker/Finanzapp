@@ -1,0 +1,3 @@
+# Solo chequeos rápidos: el e2e (npm run test:e2e) corre en CI, no acá.
+npx tsc --noEmit
+npm test
