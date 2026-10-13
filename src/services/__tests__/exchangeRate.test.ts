@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { convertirMonto, obtenerTasas, obtenerTipoCambio } from '../exchangeRate';
+import type * as ExchangeRateModule from '../exchangeRate';
 
 const API = 'https://open.er-api.com/v6/latest';
 
@@ -20,8 +20,14 @@ const respuestaOk = (base: string, rates: Record<string, number>) =>
 const TASAS_USD = { USD: 1, ARS: 1500, EUR: 0.9, BRL: 5.5 };
 
 let fetchMock: ReturnType<typeof vi.fn>;
+let obtenerTasas: typeof ExchangeRateModule.obtenerTasas;
+let obtenerTipoCambio: typeof ExchangeRateModule.obtenerTipoCambio;
+let convertirMonto: typeof ExchangeRateModule.convertirMonto;
 
-beforeEach(() => {
+beforeEach(async () => {
+  // Módulo fresco en cada test: el "fallo reciente" vive en memoria del módulo
+  vi.resetModules();
+  ({ obtenerTasas, obtenerTipoCambio, convertirMonto } = await import('../exchangeRate'));
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-10-13T12:00:00-03:00'));
   vi.stubGlobal('localStorage', new MemoryStorage());
@@ -115,10 +121,58 @@ describe('si la API falla la conversión es null, nunca 1:1', () => {
     expect(await convertirMonto(100, 'USD', 'XYZ')).toBeNull();
   });
 
-  it('un fallo no queda cacheado: el próximo intento vuelve a llamar', async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+});
+
+describe('fallo reciente: 5 minutos sin volver a pedir', () => {
+  const MIN = 60 * 1000;
+
+  it('tras un 429 no vuelve a llamar a la API durante 5 minutos', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
     expect(await obtenerTipoCambio('USD', 'ARS')).toBeNull();
+
+    vi.advanceTimersByTime(4 * MIN);
+    expect(await obtenerTipoCambio('USD', 'ARS')).toBeNull();
+    expect(await convertirMonto(10, 'USD', 'EUR')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('pasados los 5 minutos vuelve a intentar', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
+    expect(await obtenerTipoCambio('USD', 'ARS')).toBeNull();
+
+    vi.advanceTimersByTime(5 * MIN + 1);
     expect(await obtenerTipoCambio('USD', 'ARS')).toBe(1500);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['error de red', () => Promise.reject(new TypeError('Failed to fetch'))],
+    ['HTTP 500', () => Promise.resolve(new Response('boom', { status: 500 }))],
+    ['result: error', () => Promise.resolve(new Response(JSON.stringify({ result: 'error' }), { status: 200 }))],
+  ])('cualquier fallo (%s) también frena los reintentos', async (_caso, respuesta) => {
+    fetchMock.mockImplementationOnce(respuesta);
+    expect(await obtenerTasas('USD')).toBeNull();
+    expect(await obtenerTasas('USD')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('forzar no saltea el fallo reciente (evita el bloqueo por 429)', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
+    await obtenerTasas('USD');
+    expect(await obtenerTasas('USD', { forzar: true })).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('el fallo es por moneda base: otra base sí se pide', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
+    expect(await obtenerTipoCambio('USD', 'ARS')).toBeNull();
+    expect(await obtenerTipoCambio('EUR', 'ARS')).toBe(1600);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('el fallo reciente no se guarda en localStorage (solo memoria)', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('Too Many Requests', { status: 429 }));
+    await obtenerTasas('USD');
+    expect(localStorage.length).toBe(0);
   });
 });

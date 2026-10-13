@@ -5,6 +5,9 @@ const API_URL = 'https://open.er-api.com/v6/latest';
 
 const CACHE_PREFIX = 'finanzapp-tasas-';
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hora
+// Tras un fallo (429 incluido) no volvemos a pedir esa base por un rato: evita
+// martillar la API en cada render y caer en su bloqueo de 20 minutos por exceso.
+const ESPERA_TRAS_FALLO = 5 * 60 * 1000; // 5 minutos
 
 export type ExchangeRates = Record<string, number>;
 
@@ -15,6 +18,8 @@ interface TasasCacheadas {
 
 // Requests en curso por base: llamadas concurrentes comparten el mismo fetch
 const enCurso = new Map<string, Promise<ExchangeRates | null>>();
+// Momento del último fallo por base (solo en memoria: se olvida al recargar)
+const falloReciente = new Map<string, number>();
 
 function leerCache(base: string): ExchangeRates | null {
   try {
@@ -40,20 +45,24 @@ function guardarCache(base: string, rates: ExchangeRates) {
 async function pedirTasas(base: string): Promise<ExchangeRates | null> {
   try {
     const response = await fetch(`${API_URL}/${base}`);
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (data?.result !== 'success' || !data.rates) return null;
-    guardarCache(base, data.rates);
-    return data.rates as ExchangeRates;
+    const data = response.ok ? await response.json() : null;
+    if (data?.result === 'success' && data.rates) {
+      falloReciente.delete(base);
+      guardarCache(base, data.rates);
+      return data.rates as ExchangeRates;
+    }
+    console.error(`Error al obtener cotizaciones de ${base}: HTTP ${response.status}`);
   } catch (error) {
     console.error('Error al obtener cotizaciones:', error);
-    return null;
   }
+  falloReciente.set(base, Date.now());
+  return null;
 }
 
 /**
  * Tasas desde una moneda base (1 base = rates[X] X). Cacheadas 1 hora en
- * localStorage; los fallos no se cachean. Devuelve null si la API no responde.
+ * localStorage. Si la API falla, devuelve null y no vuelve a pedir esa base por
+ * 5 minutos (ni siquiera con forzar).
  */
 export async function obtenerTasas(
   base: string,
@@ -63,6 +72,9 @@ export async function obtenerTasas(
     const cacheadas = leerCache(base);
     if (cacheadas) return cacheadas;
   }
+
+  const ultimoFallo = falloReciente.get(base);
+  if (ultimoFallo !== undefined && Date.now() - ultimoFallo < ESPERA_TRAS_FALLO) return null;
 
   const pendiente = enCurso.get(base);
   if (pendiente) return pendiente;
