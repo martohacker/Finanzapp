@@ -328,7 +328,7 @@ Los datos se guardan automáticamente en el localStorage de tu navegador, separa
 
 ## Cotizaciones
 
-Las cotizaciones se obtienen de la API gratuita [ExchangeRate.Host](https://exchangerate.host/). Las cotizaciones se almacenan en caché durante 1 hora para optimizar el rendimiento.
+Las cotizaciones se obtienen de la API gratuita y sin API key de [ExchangeRate-API](https://www.exchangerate-api.com/docs/free) (`open.er-api.com/v6`). Se pide una sola vez por moneda base y se guardan en caché 1 hora. Si la API no responde, la app muestra "Cotización no disponible" en lugar de convertir 1:1.
 
 ## Licencia
 
