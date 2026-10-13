@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, X, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
 import { CATEGORIAS } from '../constants/categorias';
 import { rangoEstaSemana, rangoMesActual } from '../utils/estadisticas';
+import { hoyLocal } from '../utils/fechas';
 
 export interface FiltrosGastosState {
   texto: string;
@@ -24,7 +25,7 @@ const emptyFiltros = (): FiltrosGastosState => ({
 type RangoRapido = 'hoy' | 'semana' | 'mes' | null;
 
 function getRangoRapido(filtros: FiltrosGastosState): RangoRapido {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = hoyLocal();
   const { desde: semDesde, hasta: semHasta } = rangoEstaSemana();
   const { desde: mesDesde, hasta: mesHasta } = rangoMesActual();
   if (filtros.fechaDesde === hoy && filtros.fechaHasta === hoy) return 'hoy';
@@ -34,7 +35,7 @@ function getRangoRapido(filtros: FiltrosGastosState): RangoRapido {
 }
 
 function setRangoRapido(rango: RangoRapido): Pick<FiltrosGastosState, 'fechaDesde' | 'fechaHasta'> {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = hoyLocal();
   if (rango === 'hoy') return { fechaDesde: hoy, fechaHasta: hoy };
   if (rango === 'semana') {
     const { desde, hasta } = rangoEstaSemana();

@@ -1,19 +1,19 @@
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
+import { esDelMes, fechaLocalADate, hoyLocal, sumarDias } from './fechas';
 
 /**
  * Calcula estadísticas a partir de un array de gastos (útil para períodos filtrados).
  */
 export function calcularEstadisticasFromGastos(gastos: Gasto[]): Estadisticas {
   const ahora = new Date();
-  const fechaActual = ahora.toISOString().split('T')[0];
+  const fechaActual = hoyLocal(ahora);
   const mesActual = ahora.getMonth();
   const añoActual = ahora.getFullYear();
 
   const gastosDelDia = gastos.filter((g) => g.fecha === fechaActual);
   const gastosDelMes = gastos.filter((g) => {
-    const fechaGasto = new Date(g.fecha);
-    return fechaGasto.getMonth() === mesActual && fechaGasto.getFullYear() === añoActual;
+    return esDelMes(g.fecha, añoActual, mesActual);
   });
 
   const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
@@ -28,7 +28,7 @@ export function calcularEstadisticasFromGastos(gastos: Gasto[]): Estadisticas {
       ? Math.max(
           1,
           Math.ceil(
-            (ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) /
+            (ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) /
               (1000 * 60 * 60 * 24)
           )
         )
@@ -55,13 +55,10 @@ export function calcularEstadisticasFromGastos(gastos: Gasto[]): Estadisticas {
 export function rangoEstaSemana(): { desde: string; hasta: string } {
   const hoy = new Date();
   const dia = hoy.getDay();
-  const lunes = new Date(hoy);
-  lunes.setDate(hoy.getDate() - (dia === 0 ? 6 : dia - 1));
-  const domingo = new Date(lunes);
-  domingo.setDate(lunes.getDate() + 6);
+  const lunes = sumarDias(hoyLocal(hoy), -(dia === 0 ? 6 : dia - 1));
   return {
-    desde: lunes.toISOString().split('T')[0],
-    hasta: domingo.toISOString().split('T')[0],
+    desde: lunes,
+    hasta: sumarDias(lunes, 6),
   };
 }
 

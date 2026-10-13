@@ -1,6 +1,7 @@
 import { Download, Upload, FileJson } from 'lucide-react';
 import { useState } from 'react';
 import { Gasto } from '../types';
+import { hoyLocal } from '../utils/fechas';
 
 interface ExportarDatosProps {
   gastos: Gasto[];
@@ -34,7 +35,7 @@ export function ExportarDatos({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `finanzapp-backup-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `finanzapp-backup-${hoyLocal()}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -77,7 +78,7 @@ export function ExportarDatos({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `finanzapp-gastos-${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `finanzapp-gastos-${hoyLocal()}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

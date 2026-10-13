@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Gasto, Estadisticas } from '../types';
 import { CATEGORIAS } from '../constants/categorias';
+import { esDelMes, fechaLocalADate, hoyLocal } from '../utils/fechas';
 
 const obtenerStorageKey = (userId: string | null) => 
   userId ? `finanzapp-gastos-${userId}` : 'finanzapp-gastos-temp';
@@ -53,14 +54,13 @@ export function useGastos(userId: string | null) {
 
   const calcularEstadisticas = (): Estadisticas => {
     const ahora = new Date();
-    const fechaActual = ahora.toISOString().split('T')[0];
+    const fechaActual = hoyLocal(ahora);
     const mesActual = ahora.getMonth();
     const añoActual = ahora.getFullYear();
 
     const gastosDelDia = gastos.filter(g => g.fecha === fechaActual);
     const gastosDelMes = gastos.filter(g => {
-      const fechaGasto = new Date(g.fecha);
-      return fechaGasto.getMonth() === mesActual && fechaGasto.getFullYear() === añoActual;
+      return esDelMes(g.fecha, añoActual, mesActual);
     });
 
     const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
@@ -73,7 +73,7 @@ export function useGastos(userId: string | null) {
 
     // Calcular promedio mensual basado en días totales
     const diasTotal = gastos.length > 0 
-      ? Math.max(1, Math.ceil((ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(1, Math.ceil((ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) / (1000 * 60 * 60 * 24)))
       : 1;
     const promedioMensual = (totalGastos / diasTotal) * 30;
 

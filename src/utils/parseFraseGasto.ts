@@ -1,4 +1,5 @@
 import { CATEGORIAS } from '../constants/categorias';
+import { fechaLocalADate, formatFechaLocal } from './fechas';
 
 export interface ParseFraseResult {
   descripcion: string;
@@ -103,16 +104,9 @@ function normalizarTexto(texto: string): string {
     .toLowerCase();
 }
 
-function formatearFechaISO(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 function detectarFecha(frase: string, fechaBaseISO: string): string | undefined {
   const lower = normalizarTexto(frase);
-  const base = new Date(fechaBaseISO);
+  const base = fechaLocalADate(fechaBaseISO);
 
   if (lower.includes('hoy')) {
     return fechaBaseISO;
@@ -120,12 +114,12 @@ function detectarFecha(frase: string, fechaBaseISO: string): string | undefined 
   if (lower.includes('ayer')) {
     const d = new Date(base);
     d.setDate(d.getDate() - 1);
-    return formatearFechaISO(d);
+    return formatFechaLocal(d);
   }
   if (lower.includes('anteayer') || lower.includes('antes de ayer')) {
     const d = new Date(base);
     d.setDate(d.getDate() - 2);
-    return formatearFechaISO(d);
+    return formatFechaLocal(d);
   }
 
   // dd/mm(/yyyy) o dd-mm(-yyyy)
@@ -135,13 +129,12 @@ function detectarFecha(frase: string, fechaBaseISO: string): string | undefined 
   if (match) {
     const dia = parseInt(match[1], 10);
     const mes = parseInt(match[2], 10) - 1;
-    const baseDate = new Date(fechaBaseISO);
     const anio = match[3]
       ? parseInt(match[3].length === 2 ? `20${match[3]}` : match[3], 10)
-      : baseDate.getFullYear();
+      : base.getFullYear();
     const d = new Date(anio, mes, dia);
     if (!isNaN(d.getTime())) {
-      return formatearFechaISO(d);
+      return formatFechaLocal(d);
     }
   }
 

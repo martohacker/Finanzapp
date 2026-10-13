@@ -3,6 +3,7 @@ import { Moneda } from '../constants/monedas';
 import { formatearMonto } from '../utils/formato';
 import { TrendingUp, Plus, Trash2 } from 'lucide-react';
 import { Ingreso } from '../types';
+import { hoyLocal } from '../utils/fechas';
 
 interface BalanceCardProps {
   totalIngresosMes: number;
@@ -24,7 +25,7 @@ export function BalanceCard({
   const [mostrarForm, setMostrarForm] = useState(false);
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
-  const fechaHoy = new Date().toISOString().split('T')[0];
+  const fechaHoy = hoyLocal();
 
   const balance = totalIngresosMes - gastoDelMes;
 

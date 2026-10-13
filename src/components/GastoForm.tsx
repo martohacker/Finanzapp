@@ -4,6 +4,7 @@ import { CATEGORIAS } from '../constants/categorias';
 import { MONEDAS, MONEDA_DEFAULT } from '../constants/monedas';
 import { Plus, ChevronDown, ChevronUp, Calendar, Wallet, Mic } from 'lucide-react';
 import { parseFraseGasto } from '../utils/parseFraseGasto';
+import { hoyLocal } from '../utils/fechas';
 
 interface GastoFormProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
@@ -14,7 +15,7 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState(CATEGORIAS[0].id);
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [fecha, setFecha] = useState(hoyLocal());
   const [moneda, setMoneda] = useState(monedaActual);
   const [masOpciones, setMasOpciones] = useState(false);
   const [grabando, setGrabando] = useState(false);
@@ -34,7 +35,7 @@ export function GastoForm({ onAgregarGasto, monedaActual = MONEDA_DEFAULT }: Gas
     setDescripcion('');
     setMonto('');
     setCategoria(CATEGORIAS[0].id);
-    setFecha(new Date().toISOString().split('T')[0]);
+    setFecha(hoyLocal());
     setMoneda(monedaActual);
   };
 

@@ -6,6 +6,7 @@ import { Plus, X, Mic } from 'lucide-react';
 import { parseFraseGasto } from '../utils/parseFraseGasto';
 import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { hoyLocal } from '../utils/fechas';
 
 interface AgregarRapidoGastoProps {
   onAgregarGasto: (gasto: Omit<Gasto, 'id'>) => void;
@@ -21,7 +22,7 @@ export function AgregarRapidoGasto({ onAgregarGasto, monedaActual }: AgregarRapi
   const [moneda, setMoneda] = useState(monedaActual);
   const inputDescRef = useRef<HTMLInputElement | null>(null);
 
-  const fechaHoy = new Date().toISOString().split('T')[0];
+  const fechaHoy = hoyLocal();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

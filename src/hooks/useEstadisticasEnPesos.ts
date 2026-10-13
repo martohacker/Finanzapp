@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Gasto, Estadisticas } from '../types';
 import { obtenerTipoCambio } from '../services/exchangeRate';
+import { esDelMes, fechaLocalADate, hoyLocal } from '../utils/fechas';
 
 interface UseEstadisticasConvertidasResult {
   estadisticasConvertidas: Estadisticas | null;
@@ -49,7 +50,7 @@ export function useEstadisticasConvertidas(
       setCargandoConvertidas(true);
       try {
         const ahora = new Date();
-        const fechaActual = ahora.toISOString().split('T')[0];
+        const fechaActual = hoyLocal(ahora);
         const mesActual = ahora.getMonth();
         const añoActual = ahora.getFullYear();
 
@@ -80,8 +81,7 @@ export function useEstadisticasConvertidas(
 
           totalGastos += montoConvertido;
 
-          const fechaGasto = new Date(g.fecha);
-          if (fechaGasto.getMonth() === mesActual && fechaGasto.getFullYear() === añoActual) {
+          if (esDelMes(g.fecha, añoActual, mesActual)) {
             gastoDelMes += montoConvertido;
           }
 
@@ -103,7 +103,7 @@ export function useEstadisticasConvertidas(
             ? Math.max(
                 1,
                 Math.ceil(
-                  (ahora.getTime() - new Date(gastos[gastos.length - 1].fecha).getTime()) /
+                  (ahora.getTime() - fechaLocalADate(gastos[gastos.length - 1].fecha).getTime()) /
                     (1000 * 60 * 60 * 24)
                 )
               )

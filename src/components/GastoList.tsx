@@ -6,6 +6,7 @@ import { formatearMonto } from '../utils/formato';
 import { ConversionPesos } from './ConversionPesos';
 import { EditarGasto } from './EditarGasto';
 import { Trash2, Edit2, Copy } from 'lucide-react';
+import { formatFechaCorta, hoyLocal } from '../utils/fechas';
 
 interface GastoListProps {
   gastos: Gasto[];
@@ -17,14 +18,7 @@ interface GastoListProps {
 
 export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGasto, moneda }: GastoListProps) {
   const [gastoEditando, setGastoEditando] = useState<Gasto | null>(null);
-  const formatearFecha = (fecha: string) => {
-    const date = new Date(fecha);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  const formatearFecha = (fecha: string) => formatFechaCorta(fecha);
 
   const obtenerCategoria = (categoriaId: string) => {
     return CATEGORIAS.find(c => c.id === categoriaId) || CATEGORIAS[CATEGORIAS.length - 1];
@@ -117,7 +111,7 @@ export function GastoList({ gastos, onEliminarGasto, onEditarGasto, onRepetirGas
                         descripcion: gasto.descripcion,
                         monto: gasto.monto,
                         categoria: gasto.categoria,
-                        fecha: new Date().toISOString().split('T')[0],
+                        fecha: hoyLocal(),
                         moneda: gasto.moneda,
                       })}
                       className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"

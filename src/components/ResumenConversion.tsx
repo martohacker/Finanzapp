@@ -4,6 +4,7 @@ import { Moneda } from '../constants/monedas';
 import { useCotizaciones } from '../hooks/useCotizaciones';
 import { formatearMonto } from '../utils/formato';
 import { DollarSign, RefreshCw, AlertCircle } from 'lucide-react';
+import { esDelMes, hoyLocal } from '../utils/fechas';
 
 interface ResumenConversionProps {
   estadisticas: EstadisticasType;
@@ -37,7 +38,7 @@ export function ResumenConversion({
       setCargando(true);
       try {
         const hoy = new Date();
-        const hoyISO = hoy.toISOString().split('T')[0];
+        const hoyISO = hoyLocal(hoy);
         const mesActual = hoy.getMonth();
         const añoActual = hoy.getFullYear();
 
@@ -55,11 +56,7 @@ export function ResumenConversion({
 
           total += montoConvertido;
 
-          const fechaGasto = new Date(g.fecha);
-          if (
-            fechaGasto.getMonth() === mesActual &&
-            fechaGasto.getFullYear() === añoActual
-          ) {
+          if (esDelMes(g.fecha, añoActual, mesActual)) {
             mes += montoConvertido;
           }
 
