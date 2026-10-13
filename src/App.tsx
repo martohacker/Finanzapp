@@ -368,6 +368,18 @@ function App() {
             />
           </div>
         )}
+
+        <footer className="mt-12 border-t border-gray-200 dark:border-slate-700 pt-4 text-center text-xs text-gray-500 dark:text-slate-400">
+          {/* Atribución exigida por los términos de la API gratuita de cotizaciones */}
+          <a
+            href="https://www.exchangerate-api.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-700 hover:underline dark:hover:text-slate-200"
+          >
+            Rates By Exchange Rate API
+          </a>
+        </footer>
       </div>
 
       {/* Botón flotante agregar gasto rápido */}
